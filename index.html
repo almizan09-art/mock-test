@@ -96,12 +96,12 @@
 
     <div id="exam-view" class="card" style="display:none;">
         <div class="question-meta">
-            <span id="q-count" style="font-weight: bold;">Question 1/20</span>
+            <span id="q-count" style="font-weight: bold;">Question 1</span>
             <div id="timer">10:00</div>
         </div>
         <hr>
         <div class="question" id="q-text">Loading...</div>
-        <div id="options-box" class="options-container"></div>
+        <div class="options-container" id="options-box"></div>
         
         <div class="nav-btns">
             <button id="next-btn" onclick="nextQuestion()">Next Question</button>
@@ -115,7 +115,7 @@
             <p id="res-name" style="font-size: 1.2rem; font-weight: 500;"></p>
             <p id="res-subject" style="color: var(--primary); font-weight: bold;"></p>
             <p id="res-percent" style="font-size: 1.1rem; margin-top: 10px;"></p>
-            <div class="score-text" id="res-score">0 / 45</div>
+            <div class="score-text" id="res-score">0 / 20</div>
             
             <button onclick="location.reload()" style="margin-top:20px;">Restart Portal</button>
 
@@ -166,7 +166,7 @@
                 { q: "The process of adsorption is:", a: "B", opts: ["Endothermic", "Exothermic", "Isothermal", "None of these"] },
                 { q: "Mond’s process is used for the purification of which metal?", a: "C", opts: ["Cu", "Zn", "Ni", "Fe"] },
                 { q: "Which substance is known as the 'King of Chemicals'?", a: "C", opts: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"] },
-                { q: "What is the general electronic configuration of transition elements (d-block)?", a: "B", opts: ["(n−1)d¹⁻¹⁰ ns¹", "(n−1)d¹⁻¹⁰ ns¹⁻²", "(n−1)d⁵ ns¹", "nd¹⁻¹⁰ ns²"] },
+                { q: "What is the general electronic configuration of transition elements (d-block)?", a: "B", opts: ["(n−1)d¹⁻¹⁰ ns¹", "(n−1)d¹⁻¹⁰ ns¹⁻²", "(n−1)d¹⁻¹⁰ ns¹⁻²", "nd¹⁻¹⁰ ns²"] },
                 { q: "What is the coordination number of Co in [Co(en)₃]³⁺?", a: "C", opts: ["3", "4", "6", "2"] },
                 { q: "What is the nature of the C–X bond in haloalkanes?", a: "C", opts: ["Purely covalent", "Ionic", "Polar covalent", "Non-polar"] },
                 { q: "What is formed when phenol is heated with zinc dust?", a: "A", opts: ["Benzene", "Toluene", "Benzaldehyde", "Zinc oxide"] },
@@ -181,7 +181,7 @@
                 { q: "Fog is which type of colloidal system?", a: "B", opts: ["Gas in liquid", "Liquid in gas", "Solid in gas", "Liquid in liquid"] }
             ],
             'Biology': [
-                { q: "Which of the following statements regarding ribosomes is correct?", a: "B", opts: ["They are membrane-bound organelles", "They consist of RNA and protein", "They are present only in eukaryotic cells", "They synthesize lipids"] },
+                { q: "Which of the following is true for ribosomes?", a: "B", opts: ["They are membrane-bound organelles", "They consist of RNA and protein", "They are present only in eukaryotic cells", "They synthesize lipids"] },
                 { q: "In C₄ plants, the initial fixation of CO₂ occurs in:", a: "B", opts: ["Bundle sheath cells", "Mesophyll cells", "Guard cells", "Epidermal cells"] },
                 { q: "The oxygen released during photosynthesis comes from:", a: "B", opts: ["CO₂", "H₂O", "Glucose", "Chlorophyll"] },
                 { q: "Which phase of meiosis is characterized by the separation of homologous chromosomes?", a: "A", opts: ["Anaphase I", "Anaphase II", "Metaphase I", "Telophase II"] },
@@ -244,10 +244,7 @@
             currentQIndex = 0;
             score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            
-            // Timer logic: Biology ke liye 20 mins, baaki ke liye 10 mins
-            timeLeft = (subject === 'Biology') ? 1200 : 600; 
-            
+            timeLeft = (subject === 'Biology') ? 1200 : 600; // Biology ke liye 20 mins, baaki ke liye 10
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             startTimer();
@@ -260,10 +257,7 @@
                 let min = Math.floor(timeLeft / 60);
                 let sec = timeLeft % 60;
                 document.getElementById('timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-                if (timeLeft <= 0) { 
-                    clearInterval(timerInterval);
-                    submitExam(); 
-                }
+                if (timeLeft <= 0) { submitExam(); }
                 timeLeft--;
             }, 1000);
         }
@@ -274,7 +268,6 @@
             document.getElementById('q-text').innerText = currentQ.q;
             const optionsBox = document.getElementById('options-box');
             optionsBox.innerHTML = '';
-            
             currentQ.opts.forEach((opt, index) => {
                 const char = String.fromCharCode(65 + index);
                 const div = document.createElement('div');
@@ -282,3 +275,6 @@
                 div.innerText = `${char}) ${opt}`;
                 div.onclick = () => selectOption(div, char);
                 optionsBox.appendChild(div);
+            });
+            document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
+            document.getElementById('s

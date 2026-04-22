@@ -58,7 +58,6 @@
 
         .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
         
-        /* Result & Review Styles */
         .result-box { text-align: center; }
         .score-text { font-size: 2.5rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
         
@@ -91,7 +90,7 @@
         <div class="subject-grid">
             <button class="sub-btn" onclick="startTest('Physics')">Physics (20 Questions)</button>
             <button class="sub-btn" onclick="startTest('Chemistry')">Chemistry (20 Questions)</button>
-            <button class="sub-btn" onclick="startTest('Biology')">Biology (20 Questions)</button>
+            <button class="sub-btn" onclick="startTest('Biology')">Biology (6 Questions)</button>
         </div>
     </div>
 
@@ -102,7 +101,7 @@
         </div>
         <hr>
         <div class="question" id="q-text">Loading...</div>
-        <div class="options-container" id="options-box"></div>
+        <div class="options-box" id="options-box" class="options-container"></div>
         
         <div class="nav-btns">
             <button id="next-btn" onclick="nextQuestion()">Next Question</button>
@@ -136,7 +135,6 @@
         let currentSubject = "";
         let currentQuestions = [];
 
-        // Questions Data remains the same
         const questionsData = {
             'Physics': [
                 { q: "What is the correct relation between electric field intensity (E) and potential (V)?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
@@ -183,26 +181,12 @@
                 { q: "Fog is which type of colloidal system?", a: "B", opts: ["Gas in liquid", "Liquid in gas", "Solid in gas", "Liquid in liquid"] }
             ],
             'Biology': [
-                { q: "Double fertilization is a characteristic feature of:", a: "C", opts: ["Algae", "Bryophytes", "Angiosperms", "Gymnosperms"] },
-                { q: "The fusion of male gamete and egg cell is called:", a: "B", opts: ["Pollination", "Syngamy", "Parthenogenesis", "Triple fusion"] },
-                { q: "What is the function of Sertoli cells in the testis?", a: "B", opts: ["Hormone production", "Nourishing the sperm", "Producing sperm", "Secreting enzymes"] },
-                { q: "What is the main function of Copper-T (CuT)?", a: "B", opts: ["Prevent ovulation", "Prevent fertilization", "Form zygote", "Cause mutation"] },
-                { q: "Which plant did Mendel choose for his experiments?", a: "B", opts: ["Wild pea", "Garden pea (Pisum sativum)", "Sweet pea", "Sunn hemp"] },
-                { q: "Down’s Syndrome is caused by:", a: "C", opts: ["Monosomy", "Nullisomy", "Trisomy of the 21st chromosome", "Trisomy of the 18th chromosome"] },
-                { q: "The process of formation of RNA from DNA is called:", a: "C", opts: ["Replication", "Translation", "Transcription", "Reverse transcription"] },
-                { q: "How many codons are there in the genetic code?", a: "C", opts: ["16", "32", "64", "20"] },
-                { q: "How many chromosomes are present in Turner’s Syndrome?", a: "B", opts: ["46", "45", "47", "44"] },
-                { q: "Miller’s experiment demonstrated the origin of:", a: "C", opts: ["DNA", "Protein", "Life from organic molecules", "Oxygen"] },
-                { q: "Elephantiasis (filariasis) is caused by:", a: "A", opts: ["Wuchereria bancrofti", "Ascaris", "Entamoeba", "Plasmodium"] },
-                { q: "What type of genetic material is present in HIV?", a: "C", opts: ["Double-stranded DNA", "Single-stranded DNA", "Single-stranded RNA", "Double-stranded RNA"] },
-                { q: "Who discovered penicillin?", a: "B", opts: ["Louis Pasteur", "Alexander Fleming", "Robert Koch", "Edward Jenner"] },
-                { q: "Which are called molecular scissors?", a: "C", opts: ["Ligase", "DNA polymerase", "Restriction enzymes", "Helicase"] },
-                { q: "In BT-cotton, what does BT stand for?", a: "B", opts: ["Biotechnology", "Bacillus thuringiensis", "Bio-toxin", "Botanical technique"] },
-                { q: "PCR (Polymerase Chain Reaction) is used for:", a: "B", opts: ["Protein synthesis", "DNA amplification", "Amino acid separation", "Cell division"] },
-                { q: "The interaction between two different species where both benefit is called:", a: "C", opts: ["Parasitism", "Commensalism", "Mutualism", "Competition"] },
-                { q: "The Pyramid of Energy is always:", a: "B", opts: ["Inverted", "Upright", "Spindle-shaped", "Irregular"] },
-                { q: "Kanha National Park is famous for:", a: "B", opts: ["Lion", "Tiger", "Rhinoceros", "Elephant"] },
-                { q: "The ozone layer is found in the:", a: "B", opts: ["Troposphere", "Stratosphere", "Mesosphere", "Ionosphere"] }
+                { q: "Which of the following statements regarding ribosomes is correct?", a: "B", opts: ["They are membrane-bound organelles", "They consist of RNA and protein", "They are present only in eukaryotic cells", "They synthesize lipids"] },
+                { q: "In C₄ plants, the initial fixation of CO₂ occurs in:", a: "B", opts: ["Bundle sheath cells", "Mesophyll cells", "Guard cells", "Epidermal cells"] },
+                { q: "The oxygen released during photosynthesis comes from:", a: "B", opts: ["CO₂", "H₂O", "Glucose", "Chlorophyll"] },
+                { q: "Which phase of meiosis is characterized by the separation of homologous chromosomes?", a: "A", opts: ["Anaphase I", "Anaphase II", "Metaphase I", "Telophase II"] },
+                { q: "The enzyme nitrogenase is sensitive to:", a: "B", opts: ["Nitrogen", "Oxygen", "Hydrogen", "Carbon dioxide"] },
+                { q: "Which of the following is a non-reducing sugar?", a: "C", opts: ["Glucose", "Fructose", "Sucrose", "Lactose"] }
             ]
         };
 
@@ -281,11 +265,9 @@
                 const isCorrect = (userAnswers[i] === q.a);
                 if(isCorrect) score++;
 
-                // Create Review Item
                 const reviewDiv = document.createElement('div');
                 reviewDiv.className = `review-item ${isCorrect ? 'correct' : 'wrong'}`;
                 
-                // Get full text of chosen option
                 const userChoiceIndex = userAnswers[i] ? userAnswers[i].charCodeAt(0) - 65 : -1;
                 const correctChoiceIndex = q.a.charCodeAt(0) - 65;
 
@@ -302,7 +284,7 @@
             document.getElementById('result-view').style.display = 'block';
             document.getElementById('res-name').innerText = "Student: " + localStorage.getItem('studentName');
             document.getElementById('res-subject').innerText = "Subject: " + currentSubject;
-            document.getElementById('res-percent').innerText = `Success Rate: ${(score/currentQuestions.length)*100}%`;
+            document.getElementById('res-percent').innerText = `Success Rate: ${Math.round((score/currentQuestions.length)*100)}%`;
             document.getElementById('res-score').innerText = `${score} / ${currentQuestions.length}`;
         }
     </script>

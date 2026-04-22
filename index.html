@@ -90,7 +90,7 @@
         <div class="subject-grid">
             <button class="sub-btn" onclick="startTest('Physics')">Physics (20 Questions)</button>
             <button class="sub-btn" onclick="startTest('Chemistry')">Chemistry (20 Questions)</button>
-            <button class="sub-btn" onclick="startTest('Biology')">Biology (6 Questions)</button>
+            <button class="sub-btn" onclick="startTest('Biology')">Biology (45 Questions)</button>
         </div>
     </div>
 
@@ -101,7 +101,7 @@
         </div>
         <hr>
         <div class="question" id="q-text">Loading...</div>
-        <div class="options-box" id="options-box" class="options-container"></div>
+        <div class="options-container" id="options-box"></div>
         
         <div class="nav-btns">
             <button id="next-btn" onclick="nextQuestion()">Next Question</button>
@@ -115,7 +115,7 @@
             <p id="res-name" style="font-size: 1.2rem; font-weight: 500;"></p>
             <p id="res-subject" style="color: var(--primary); font-weight: bold;"></p>
             <p id="res-percent" style="font-size: 1.1rem; margin-top: 10px;"></p>
-            <div class="score-text" id="res-score">0 / 20</div>
+            <div class="score-text" id="res-score">0 / 45</div>
             
             <button onclick="location.reload()" style="margin-top:20px;">Restart Portal</button>
 
@@ -186,7 +186,46 @@
                 { q: "The oxygen released during photosynthesis comes from:", a: "B", opts: ["CO₂", "H₂O", "Glucose", "Chlorophyll"] },
                 { q: "Which phase of meiosis is characterized by the separation of homologous chromosomes?", a: "A", opts: ["Anaphase I", "Anaphase II", "Metaphase I", "Telophase II"] },
                 { q: "The enzyme nitrogenase is sensitive to:", a: "B", opts: ["Nitrogen", "Oxygen", "Hydrogen", "Carbon dioxide"] },
-                { q: "Which of the following is a non-reducing sugar?", a: "C", opts: ["Glucose", "Fructose", "Sucrose", "Lactose"] }
+                { q: "Which of the following is a non-reducing sugar?", a: "C", opts: ["Glucose", "Fructose", "Sucrose", "Lactose"] },
+                { q: "The hormone responsible for apical dominance is:", a: "B", opts: ["Cytokinin", "Auxin", "Ethylene", "Gibberellin"] },
+                { q: "Which of the following is NOT a function of the liver?", a: "C", opts: ["Bile secretion", "Detoxification", "Insulin production", "Glycogen storage"] },
+                { q: "The Bohr effect is related to:", a: "D", opts: ["Oxygen binding to hemoglobin", "Carbon dioxide transport", "pH affecting oxygen affinity", "All of the above"] },
+                { q: "Which blood group is called universal donor?", a: "D", opts: ["A", "B", "AB", "O"] },
+                { q: "The pacemaker of the human heart is:", a: "B", opts: ["AV node", "SA node", "Bundle of His", "Purkinje fibers"] },
+                { q: "Which vitamin deficiency causes night blindness?", a: "A", opts: ["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D"] },
+                { q: "Which part of nephron is responsible for maximum reabsorption?", a: "A", opts: ["PCT", "DCT", "Loop of Henle", "Collecting duct"] },
+                { q: "Which of the following is a steroid hormone?", a: "C", opts: ["Insulin", "Adrenaline", "Testosterone", "Oxytocin"] },
+                { q: "The synapse is a junction between:", a: "D", opts: ["Two neurons", "Neuron and muscle", "Neuron and gland", "All of these"] },
+                { q: "Mendel’s law of independent assortment applies to:", a: "C", opts: ["Linked genes", "Genes on same chromosome", "Genes on different chromosomes", "Identical genes"] },
+                { q: "The genetic material in most organisms is:", a: "B", opts: ["RNA", "DNA", "Protein", "Lipid"] },
+                { q: "Which of the following is a stop codon?", a: "B", opts: ["AUG", "UAA", "UGG", "GCU"] },
+                { q: "Crossing over leads to:", a: "B", opts: ["Mutation", "Recombination", "Replication", "Translation"] },
+                { q: "In humans, haemophilia is:", a: "C", opts: ["Autosomal dominant", "Autosomal recessive", "X-linked recessive", "Y-linked"] },
+                { q: "PCR technique was developed by:", a: "B", opts: ["Watson", "Kary Mullis", "Crick", "Mendel"] },
+                { q: "Restriction enzymes are obtained from:", a: "C", opts: ["Plants", "Animals", "Bacteria", "Viruses"] },
+                { q: "The vector commonly used in genetic engineering is:", a: "C", opts: ["tRNA", "mRNA", "Plasmid", "Ribosome"] },
+                { q: "The antibiotic penicillin was discovered by:", a: "B", opts: ["Pasteur", "Fleming", "Koch", "Jenner"] },
+                { q: "Bt toxin is produced by:", a: "B", opts: ["Virus", "Bacteria", "Fungi", "Plant"] },
+                { q: "The pyramid of energy is always:", a: "B", opts: ["Inverted", "Upright", "Circular", "Irregular"] },
+                { q: "Which of the following is a primary consumer?", a: "B", opts: ["Grass", "Cow", "Tiger", "Lion"] },
+                { q: "Ozone layer absorbs:", a: "B", opts: ["Infrared rays", "UV rays", "Visible light", "X-rays"] },
+                { q: "Biodiversity hotspots are regions with:", a: "B", opts: ["Low diversity", "High diversity", "No species", "Only animals"] },
+                { q: "Mutualism is an interaction where:", a: "B", opts: ["One benefits", "Both benefit", "One harmed", "None benefit"] },
+                { q: "Which organelle is involved in protein packaging?", a: "B", opts: ["ER", "Golgi apparatus", "Lysosome", "Nucleus"] },
+                { q: "The site of glycolysis is:", a: "B", opts: ["Mitochondria", "Cytoplasm", "Nucleus", "Chloroplast"] },
+                { q: "The normal respiratory rate in adults is:", a: "A", opts: ["12–16/min", "20–25/min", "5–10/min", "30–40/min"] },
+                { q: "Which hormone regulates blood sugar?", a: "B", opts: ["Thyroxine", "Insulin", "Estrogen", "Testosterone"] },
+                { q: "Which of the following is NOT a nucleotide base?", a: "D", opts: ["Adenine", "Guanine", "Uracil", "Glucose"] },
+                { q: "The enzyme pepsin works in:", a: "A", opts: ["Stomach", "Mouth", "Intestine", "Liver"] },
+                { q: "Darwin’s theory is based on:", a: "B", opts: ["Mutation", "Natural selection", "Artificial selection", "Isolation"] },
+                { q: "Which is a biodegradable pollutant?", a: "C", opts: ["Plastic", "Glass", "Paper", "Metal"] },
+                { q: "Which gas is used in photosynthesis?", a: "B", opts: ["O₂", "CO₂", "N₂", "H₂"] },
+                { q: "Which organ filters blood?", a: "B", opts: ["Liver", "Kidney", "Heart", "Lung"] },
+                { q: "The unit of heredity is:", a: "B", opts: ["Cell", "Gene", "Chromosome", "DNA"] },
+                { q: "Which of the following is a vector-borne disease?", a: "B", opts: ["Tuberculosis", "Malaria", "Cancer", "Diabetes"] },
+                { q: "Which vitamin helps in blood clotting?", a: "D", opts: ["A", "B", "C", "K"] },
+                { q: "Which organ helps in breathing?", a: "B", opts: ["Kidney", "Lung", "Liver", "Heart"] },
+                { q: "Which part of brain controls balance?", a: "B", opts: ["Cerebrum", "Cerebellum", "Medulla", "Hypothalamus"] }
             ]
         };
 
@@ -205,7 +244,7 @@
             currentQIndex = 0;
             score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            timeLeft = 600;
+            timeLeft = subject === 'Biology' ? 1200 : 600; // Biology ke liye zyada time
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             startTimer();
@@ -238,55 +277,4 @@
                 optionsBox.appendChild(div);
             });
             document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
-            document.getElementById('submit-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'block' : 'none';
-        }
-
-        function selectOption(el, char) {
-            document.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
-            el.classList.add('selected');
-            userAnswers[currentQIndex] = char;
-        }
-
-        function nextQuestion() {
-            if(!userAnswers[currentQIndex]) return alert("Please select an answer!");
-            currentQIndex++;
-            displayQuestion();
-        }
-
-        function submitExam() {
-            if(timeLeft > 0 && !userAnswers[currentQIndex]) return alert("Please select answer!");
-            clearInterval(timerInterval);
-            
-            score = 0;
-            const reviewList = document.getElementById('review-list');
-            reviewList.innerHTML = '';
-
-            currentQuestions.forEach((q, i) => {
-                const isCorrect = (userAnswers[i] === q.a);
-                if(isCorrect) score++;
-
-                const reviewDiv = document.createElement('div');
-                reviewDiv.className = `review-item ${isCorrect ? 'correct' : 'wrong'}`;
-                
-                const userChoiceIndex = userAnswers[i] ? userAnswers[i].charCodeAt(0) - 65 : -1;
-                const correctChoiceIndex = q.a.charCodeAt(0) - 65;
-
-                reviewDiv.innerHTML = `
-                    <span class="status-badge">${isCorrect ? 'CORRECT' : 'WRONG'}</span>
-                    <p style="margin:5px 0"><strong>Q${i+1}:</strong> ${q.q}</p>
-                    <p style="margin:2px 0; color: ${isCorrect ? 'green' : 'red'}">Your Answer: ${userAnswers[i] || 'Not Attempted'} - ${userChoiceIndex >= 0 ? q.opts[userChoiceIndex] : ''}</p>
-                    ${!isCorrect ? `<p style="margin:2px 0; color: green">Correct Answer: ${q.a} - ${q.opts[correctChoiceIndex]}</p>` : ''}
-                `;
-                reviewList.appendChild(reviewDiv);
-            });
-
-            document.getElementById('exam-view').style.display = 'none';
-            document.getElementById('result-view').style.display = 'block';
-            document.getElementById('res-name').innerText = "Student: " + localStorage.getItem('studentName');
-            document.getElementById('res-subject').innerText = "Subject: " + currentSubject;
-            document.getElementById('res-percent').innerText = `Success Rate: ${Math.round((score/currentQuestions.length)*100)}%`;
-            document.getElementById('res-score').innerText = `${score} / ${currentQuestions.length}`;
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('

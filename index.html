@@ -23,7 +23,7 @@
         .card {
             background: white; padding: 2.5rem; border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            width: 90%; max-width: 550px;
+            width: 90%; max-width: 600px;
         }
 
         h2 { color: var(--primary); text-align: center; margin-top: 0; }
@@ -35,7 +35,7 @@
 
         button {
             background: var(--primary); color: white; border: none;
-            padding: 15px; border-radius: 10px; cursor: pointer;
+            padding: 12px; border-radius: 10px; cursor: pointer;
             font-weight: 600; width: 100%; transition: 0.3s;
         }
 
@@ -45,155 +45,171 @@
         .sub-btn { background: #4b5563; }
         .sub-btn:hover { background: var(--accent); }
 
-        /* Exam View Styles */
-        #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; text-align: right; }
-        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; }
+        #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; }
+        .question-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; min-height: 60px; }
         .options-container { display: flex; flex-direction: column; gap: 10px; }
         .option-item {
             padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
             cursor: pointer; transition: 0.2s;
         }
-        .option-item:hover { background: #f1f5f9; border-color: var(--primary); }
-        
-        /* Result Style */
+        .option-item.selected { background: #d1fae5; border-color: #10b981; }
+
+        .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
         .result-box { text-align: center; }
-        .score-text { font-size: 2rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
+        .score-text { font-size: 2.5rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
 
     <div id="login-view" class="card">
         <h2>Student Portal</h2>
-        <p style="text-align: center; color: #64748b;">Enter your name to start the session</p>
         <input type="text" id="student-name" placeholder="Enter Full Name">
-        <button onclick="goToDashboard()">Start Test Session</button>
+        <button onclick="goToDashboard()">Start Session</button>
     </div>
 
     <div id="dashboard-view" class="card" style="display:none;">
         <h2 id="welcome-text">Select Subject</h2>
         <div class="subject-grid">
-            <button class="sub-btn" onclick="startTest('Physics')">Physics (Mix Test)</button>
-            <button class="sub-btn" onclick="startTest('Chemistry')">Chemistry (Mix Test)</button>
-            <button class="sub-btn" onclick="startTest('Biology')">Biology (Mix Test)</button>
+            <button class="sub-btn" onclick="startTest('Physics')">Physics (20 Questions)</button>
+            <button class="sub-btn" disabled style="opacity: 0.5;">Chemistry (Coming Soon)</button>
+            <button class="sub-btn" disabled style="opacity: 0.5;">Biology (Coming Soon)</button>
         </div>
     </div>
 
     <div id="exam-view" class="card" style="display:none;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 id="display-subject" style="color: var(--primary);">Subject</h3>
-            <div id="timer">Time: 05:00</div>
+        <div class="question-meta">
+            <span id="q-count" style="font-weight: bold;">Question 1/20</span>
+            <div id="timer">05:00</div>
         </div>
         <hr>
-        <div id="question-container">
-            <div class="question" id="q-text">Loading question...</div>
-            <div class="options-container" id="options-box"></div>
+        <div class="question" id="q-text">Loading...</div>
+        <div class="options-container" id="options-box"></div>
+        
+        <div class="nav-btns">
+            <button id="next-btn" onclick="nextQuestion()">Next Question</button>
+            <button id="submit-btn" onclick="submitExam()" style="display:none; background: var(--accent);">Submit Final Test</button>
         </div>
-        <br>
-        <button onclick="submitExam()" style="background: var(--accent);">Submit Test</button>
     </div>
 
     <div id="result-view" class="card" style="display:none;">
         <div class="result-box">
-            <h2>Test Result</h2>
-            <p id="result-user-name"></p>
-            <div class="score-text" id="final-score">0 / 0</div>
-            <p id="result-msg"></p>
-            <button onclick="location.reload()" style="margin-top:20px;">Take Another Test</button>
+            <h2>Exam Completed!</h2>
+            <p id="res-name"></p>
+            <div class="score-text" id="res-score">0 / 20</div>
+            <p id="res-percent"></p>
+            <button onclick="location.reload()" style="margin-top:20px;">Restart Portal</button>
         </div>
     </div>
 
     <script>
-        let timeLeft = 300; 
-        let timerInterval;
+        let currentQIndex = 0;
         let score = 0;
-        let totalQuestions = 1; // Filhaal 1 question hai demo ke liye
-        let selectedAnswer = "";
-        let correctAnswer = "Newton"; // Physics sample ke liye
+        let userAnswers = [];
+        let timerInterval;
+        let timeLeft = 600; // 10 Minutes for 20 questions
+
+        const physicsQuestions = [
+            { q: "What is the correct relation between electric field intensity (E) and potential (V)?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
+            { q: "The capacitance of a capacitor does NOT depend on:", a: "D", opts: ["Shape of the plates", "Size of the plates", "Medium between the plates", "Charge on the plates"] },
+            { q: "What is the SI unit of resistance?", a: "C", opts: ["Ampere", "Volt", "Ohm (Ω)", "Watt"] },
+            { q: "Kirchhoff’s second law (Loop Rule) is based on the conservation of:", a: "C", opts: ["Charge", "Momentum", "Energy", "Mass"] },
+            { q: "What is the SI unit of magnetic flux?", a: "B", opts: ["Tesla", "Weber", "Gauss", "Henry"] },
+            { q: "Lenz’s Law is based on which principle?", a: "A", opts: ["Conservation of energy", "Conservation of charge", "Conservation of mass", "Conservation of momentum"] },
+            { q: "A transformer works on the principle of:", a: "B", opts: ["Self-induction", "Mutual induction", "Eddy currents", "Total internal reflection"] },
+            { q: "The speed of light is maximum in:", a: "C", opts: ["Glass", "Water", "Vacuum", "Air"] },
+            { q: "What is the formula of Brewster’s Law?", a: "C", opts: ["μ = sin(iₚ)", "μ = cos(iₚ)", "μ = tan(iₚ)", "μ = cot(iₚ)"] },
+            { q: "What is the correct formula for De Broglie wavelength?", a: "A", opts: ["λ = h/mv", "λ = hv/m", "λ = m/hv", "λ = hm/v"] },
+            { q: "Who proposed the 'Plum Pudding Model' of the atom?", a: "C", opts: ["Rutherford", "Bohr", "J.J. Thomson", "Dalton"] },
+            { q: "In a P-type semiconductor, the majority charge carriers are:", a: "B", opts: ["Electrons", "Holes", "Neutrons", "Protons"] },
+            { q: "Which electromagnetic wave has the highest frequency?", a: "B", opts: ["UV rays", "Gamma rays", "X-rays", "Radio waves"] },
+            { q: "What is the mirror formula?", a: "B", opts: ["1/f = 1/v - 1/u", "1/f = 1/v + 1/u", "f = u + v", "f = uv"] },
+            { q: "The shining (brilliance) of a diamond is due to:", a: "C", opts: ["Interference", "Diffraction", "Total internal reflection", "Refraction"] },
+            { q: "Who discovered the photoelectric effect?", a: "B", opts: ["Einstein", "Hertz", "Newton", "Maxwell"] },
+            { q: "Which series of the hydrogen spectrum lies in the visible region?", a: "B", opts: ["Lyman series", "Balmer series", "Paschen series", "Pfund series"] },
+            { q: "What is the Boolean expression of a NOR gate?", a: "C", opts: ["Y = A + B", "Y = A · B", "Y = (A + B)̅", "Y = (A · B)̅"] },
+            { q: "Binding energy per nucleon is maximum for:", a: "C", opts: ["Helium", "Uranium", "Iron (Fe)", "Oxygen"] },
+            { q: "What is the unit of power of a lens?", a: "B", opts: ["Meter", "Dioptre (D)", "Candela", "Watt"] }
+        ];
 
         function goToDashboard() {
             const name = document.getElementById('student-name').value;
-            if (name.trim() === "") {
-                alert("Please enter your name!");
-                return;
-            }
+            if (name.trim() === "") return alert("Please enter name!");
             localStorage.setItem('studentName', name);
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('dashboard-view').style.display = 'block';
-            document.getElementById('welcome-text').innerText = "Welcome, " + name + "! Select Subject";
+            document.getElementById('welcome-text').innerText = "Welcome, " + name;
         }
 
         function startTest(subject) {
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
-            document.getElementById('display-subject').innerText = subject;
-            score = 0; 
             startTimer();
-            loadQuestion(subject);
+            displayQuestion();
         }
 
         function startTimer() {
             timerInterval = setInterval(() => {
-                let minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-                document.getElementById('timer').innerText = `Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); }
+                let min = Math.floor(timeLeft / 60);
+                let sec = timeLeft % 60;
+                document.getElementById('timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+                if (timeLeft <= 0) { submitExam(); }
                 timeLeft--;
             }, 1000);
         }
 
-        function loadQuestion(subject) {
-            const qText = document.getElementById('q-text');
-            const optionsBox = document.getElementById('options-box');
+        function displayQuestion() {
+            const currentQ = physicsQuestions[currentQIndex];
+            document.getElementById('q-count').innerText = `Question ${currentQIndex + 1}/20`;
+            document.getElementById('q-text').innerText = currentQ.q;
             
-            if(subject === 'Physics') {
-                qText.innerText = "What is the unit of Force?";
-                optionsBox.innerHTML = `
-                    <div class="option-item" onclick="selectOpt(this, 'Newton')">Newton</div>
-                    <div class="option-item" onclick="selectOpt(this, 'Joule')">Joule</div>
-                    <div class="option-item" onclick="selectOpt(this, 'Watt')">Watt</div>
-                    <div class="option-item" onclick="selectOpt(this, 'Pascal')">Pascal</div>
-                `;
-                correctAnswer = "Newton";
-            } else {
-                qText.innerText = "Sample question for " + subject + "?";
-                optionsBox.innerHTML = `
-                    <div class="option-item" onclick="selectOpt(this, 'A')">Option A</div>
-                    <div class="option-item" onclick="selectOpt(this, 'B')">Option B</div>
-                `;
-                correctAnswer = "A";
+            const optionsBox = document.getElementById('options-box');
+            optionsBox.innerHTML = '';
+            
+            currentQ.opts.forEach((opt, index) => {
+                const char = String.fromCharCode(65 + index); // A, B, C, D
+                const div = document.createElement('div');
+                div.className = 'option-item';
+                div.innerText = `${char}) ${opt}`;
+                div.onclick = () => selectOption(div, char);
+                optionsBox.appendChild(div);
+            });
+
+            // Show submit button on last question
+            if(currentQIndex === physicsQuestions.length - 1) {
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('submit-btn').style.display = 'block';
             }
         }
 
-        function selectOpt(element, value) {
-            document.querySelectorAll('.option-item').forEach(opt => {
-                opt.style.background = 'white';
-                opt.style.borderColor = '#cbd5e1';
-            });
-            element.style.background = '#d1fae5';
-            element.style.borderColor = '#10b981';
-            selectedAnswer = value;
+        function selectOption(el, char) {
+            document.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            userAnswers[currentQIndex] = char;
+        }
+
+        function nextQuestion() {
+            if(!userAnswers[currentQIndex]) return alert("Please select an answer!");
+            currentQIndex++;
+            displayQuestion();
         }
 
         function submitExam() {
+            if(!userAnswers[currentQIndex] && timeLeft > 0) return alert("Select answer before submitting!");
             clearInterval(timerInterval);
             
-            // Check Score
-            if(selectedAnswer === correctAnswer) {
-                score = 1;
-            }
+            // Calculate Score
+            score = 0;
+            physicsQuestions.forEach((q, i) => {
+                if(userAnswers[i] === q.a) score++;
+            });
 
-            // Show Result View
             document.getElementById('exam-view').style.display = 'none';
             document.getElementById('result-view').style.display = 'block';
-            
-            document.getElementById('result-user-name').innerText = "Name: " + localStorage.getItem('studentName');
-            document.getElementById('final-score').innerText = score + " / " + totalQuestions;
-            
-            if(score === totalQuestions) {
-                document.getElementById('result-msg').innerText = "Excellent! You passed.";
-            } else {
-                document.getElementById('result-msg').innerText = "Better luck next time!";
-            }
+            document.getElementById('res-name').innerText = "Student: " + localStorage.getItem('studentName');
+            document.getElementById('res-score').innerText = `${score} / 20`;
+            document.getElementById('res-percent').innerText = `Success Rate: ${(score/20)*100}%`;
         }
     </script>
 </body>

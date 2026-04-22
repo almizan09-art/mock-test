@@ -9,12 +9,11 @@
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; color: var(--text); }
         .card { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
         h2 { color: var(--primary); text-align: center; margin-top: 0; }
-        input[type="text"] { width: 100%; padding: 15px; margin: 20px 0; border: 2px solid #e2e8f0; border-radius: 10px; outline: none; box-sizing: border-box; }
+        input[type="text"] { width: 100%; padding: 15px; margin: 20px 0; border: 2px solid #e2e8f0; border-radius: 10px; outline: none; box-sizing: border-box; font-size: 1rem; }
         button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.3s; margin-top: 10px; }
         button:hover { background: #1d4ed8; transform: translateY(-2px); }
         .subject-grid { display: grid; gap: 15px; margin-top: 20px; }
         .sub-btn { background: #4b5563; }
-        .sub-btn:hover { background: var(--accent); }
         #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; }
         .question-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; min-height: 60px; line-height: 1.4; }
@@ -28,9 +27,6 @@
         .review-item { padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid #ccc; background: #f9fafb; }
         .review-item.correct { border-left-color: var(--accent); background: #f0fdf4; }
         .review-item.wrong { border-left-color: var(--danger); background: #fef2f2; }
-        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
-        .correct .status-badge { background: var(--accent); color: white; }
-        .wrong .status-badge { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
@@ -44,9 +40,9 @@
     <div id="dashboard-view" class="card" style="display:none;">
         <h2 id="welcome-text">Select Subject</h2>
         <div class="subject-grid">
-            <button class="sub-btn" onclick="startTest('Physics')">Physics (20 Questions)</button>
-            <button class="sub-btn" onclick="startTest('Chemistry')">Chemistry (20 Questions)</button>
-            <button class="sub-btn" onclick="startTest('Biology')">Biology (45 Questions)</button>
+            <button class="sub-btn" onclick="startTest('Physics')">Physics (20 Qs)</button>
+            <button class="sub-btn" onclick="startTest('Chemistry')">Chemistry (20 Qs)</button>
+            <button class="sub-btn" onclick="startTest('Biology')">Biology (45 Qs)</button>
         </div>
     </div>
 
@@ -68,10 +64,9 @@
         <div class="result-box">
             <h2>Exam Completed!</h2>
             <p id="res-name" style="font-size: 1.2rem;"></p>
-            <p id="res-subject" style="color: var(--primary); font-weight: bold;"></p>
             <div class="score-text" id="res-score">0 / 0</div>
-            <p style="color: #666; font-size: 0.9rem;">The report is being sent to teacher at 7478471531.</p>
-            <button onclick="location.reload()" style="background: #4b5563;">Restart Portal</button>
+            <p style="color: #666;">Report sent to: 7478471531</p>
+            <button onclick="location.reload()" style="background: #4b5563;">Restart Exam</button>
             <div class="review-section"><h3>Answer Review</h3><div id="review-list"></div></div>
         </div>
     </div>
@@ -81,102 +76,102 @@
 
         const questionsData = {
             'Physics': [
-                { q: "What is the correct relation between electric field intensity (E) and potential (V)?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
-                { q: "The capacitance of a capacitor does NOT depend on:", a: "D", opts: ["Shape of the plates", "Size of the plates", "Medium between the plates", "Charge on the plates"] },
-                { q: "What is the SI unit of resistance?", a: "C", opts: ["Ampere", "Volt", "Ohm (Ω)", "Watt"] },
-                { q: "Kirchhoff’s second law (Loop Rule) is based on the conservation of:", a: "C", opts: ["Charge", "Momentum", "Energy", "Mass"] },
-                { q: "What is the SI unit of magnetic flux?", a: "B", opts: ["Tesla", "Weber", "Gauss", "Henry"] },
-                { q: "Lenz’s Law is based on which principle?", a: "A", opts: ["Conservation of energy", "Conservation of charge", "Conservation of mass", "Conservation of momentum"] },
-                { q: "A transformer works on the principle of:", a: "B", opts: ["Self-induction", "Mutual induction", "Eddy currents", "Total internal reflection"] },
-                { q: "The speed of light is maximum in:", a: "C", opts: ["Glass", "Water", "Vacuum", "Air"] },
-                { q: "What is the formula of Brewster’s Law?", a: "C", opts: ["μ = sin(iₚ)", "μ = cos(iₚ)", "μ = tan(iₚ)", "μ = cot(iₚ)"] },
-                { q: "What is the correct formula for De Broglie wavelength?", a: "A", opts: ["λ = h/mv", "λ = hv/m", "λ = m/hv", "λ = hm/v"] },
-                { q: "Who proposed the 'Plum Pudding Model' of the atom?", a: "C", opts: ["Rutherford", "Bohr", "J.J. Thomson", "Dalton"] },
-                { q: "In a P-type semiconductor, the majority charge carriers are:", a: "B", opts: ["Electrons", "Holes", "Neutrons", "Protons"] },
-                { q: "Which electromagnetic wave has the highest frequency?", a: "B", opts: ["UV rays", "Gamma rays", "X-rays", "Radio waves"] },
-                { q: "What is the mirror formula?", a: "B", opts: ["1/f = 1/v - 1/u", "1/f = 1/v + 1/u", "f = u + v", "f = uv"] },
-                { q: "The shining (brilliance) of a diamond is due to:", a: "C", opts: ["Interference", "Diffraction", "Total internal reflection", "Refraction"] },
-                { q: "Who discovered the photoelectric effect?", a: "B", opts: ["Einstein", "Hertz", "Newton", "Maxwell"] },
-                { q: "Which series of the hydrogen spectrum lies in the visible region?", a: "B", opts: ["Lyman series", "Balmer series", "Paschen series", "Pfund series"] },
-                { q: "What is the Boolean expression of a NOR gate?", a: "C", opts: ["Y = A + B", "Y = A · B", "Y = (A + B)̅", "Y = (A · B)̅"] },
-                { q: "Binding energy per nucleon is maximum for:", a: "C", opts: ["Helium", "Uranium", "Iron (Fe)", "Oxygen"] },
-                { q: "What is the unit of power of a lens?", a: "B", opts: ["Meter", "Dioptre (D)", "Candela", "Watt"] }
+                { q: "Relation between E and V?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
+                { q: "Capacitance depends on?", a: "D", opts: ["Shape", "Size", "Medium", "Charge"] },
+                { q: "Unit of resistance?", a: "C", opts: ["Ampere", "Volt", "Ohm", "Watt"] },
+                { q: "Kirchhoff's 2nd law based on?", a: "C", opts: ["Charge", "Mass", "Energy", "Momentum"] },
+                { q: "Unit of magnetic flux?", a: "B", opts: ["Tesla", "Weber", "Gauss", "Henry"] },
+                { q: "Lenz law based on?", a: "A", opts: ["Energy", "Charge", "Mass", "None"] },
+                { q: "Transformer works on?", a: "B", opts: ["Self induction", "Mutual induction", "Eddy current", "Refraction"] },
+                { q: "Light speed max in?", a: "C", opts: ["Water", "Glass", "Vacuum", "Air"] },
+                { q: "Brewster law formula?", a: "C", opts: ["u=sin i", "u=cos i", "u=tan i", "u=cot i"] },
+                { q: "De Broglie formula?", a: "A", opts: ["L = h/mv", "L = mv/h", "L = h*mv", "None"] },
+                { q: "Plum pudding model by?", a: "C", opts: ["Bohr", "Dalton", "Thomson", "Newton"] },
+                { q: "Majority carriers in P-type?", a: "B", opts: ["Electrons", "Holes", "Neutrons", "Protons"] },
+                { q: "Highest frequency wave?", a: "B", opts: ["UV", "Gamma", "X-ray", "Radio"] },
+                { q: "Mirror formula?", a: "B", opts: ["1/f=1/v-1/u", "1/f=1/v+1/u", "f=u+v", "None"] },
+                { q: "Diamond brilliance due to?", a: "C", opts: ["Diffraction", "Refraction", "TIR", "Interference"] },
+                { q: "Photoelectric effect by?", a: "B", opts: ["Einstein", "Hertz", "Newton", "Bohr"] },
+                { q: "Visible series in H-spectrum?", a: "B", opts: ["Lyman", "Balmer", "Paschen", "Brackett"] },
+                { q: "NOR gate expression?", a: "C", opts: ["Y=A+B", "Y=A.B", "Y=overline(A+B)", "Y=overline(A.B)"] },
+                { q: "Binding energy max for?", a: "C", opts: ["He", "U", "Fe", "O"] },
+                { q: "Unit of lens power?", a: "B", opts: ["Meter", "Dioptre", "Watt", "Candela"] }
             ],
             'Chemistry': [
-                { q: "What is the unit of 'Molarity'?", a: "A", opts: ["mol/L", "mol/kg", "g/L", "No unit"] },
-                { q: "What is the total number of Bravais lattices?", a: "B", opts: ["7", "14", "12", "9"] },
-                { q: "Which gas is used in a fuel cell?", a: "C", opts: ["N₂", "O₂", "H₂", "CO₂"] },
-                { q: "What is the unit of rate constant for a zero-order reaction?", a: "C", opts: ["s⁻¹", "L·mol⁻¹·s⁻¹", "mol·L⁻¹·s⁻¹", "mol·L⁻¹"] },
-                { q: "The process of adsorption is:", a: "B", opts: ["Endothermic", "Exothermic", "Isothermal", "None of these"] },
-                { q: "Mond’s process is used for the purification of which metal?", a: "C", opts: ["Cu", "Zn", "Ni", "Fe"] },
-                { q: "Which substance is known as the 'King of Chemicals'?", a: "C", opts: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"] },
-                { q: "General electronic configuration of d-block elements:", a: "B", opts: ["(n-1)d ns", "(n-1)d¹⁻¹⁰ ns¹⁻²", "nd ns", "nd¹⁰ ns²"] },
-                { q: "What is the coordination number of Co in [Co(en)₃]³⁺?", a: "C", opts: ["3", "4", "6", "2"] },
-                { q: "What is the nature of the C–X bond in haloalkanes?", a: "C", opts: ["Purely covalent", "Ionic", "Polar covalent", "Non-polar"] },
-                { q: "What is formed when phenol is heated with zinc dust?", a: "A", opts: ["Benzene", "Toluene", "Benzaldehyde", "Zinc oxide"] },
-                { q: "Lucas Reagent is a mixture of:", a: "A", opts: ["HCl + anhydrous ZnCl₂", "HNO₃ + H₂SO₄", "Pd/BaSO₄", "NaCl + ZnCl₂"] },
-                { q: "Fehling’s solution test is NOT given by which compound?", a: "C", opts: ["Methanal", "Ethanal", "Benzaldehyde", "Propanal"] },
-                { q: "What is the nature of amines?", a: "B", opts: ["Acidic", "Basic", "Neutral", "Amphoteric"] },
-                { q: "What is the chemical name of Vitamin C?", a: "B", opts: ["Retinol", "Ascorbic acid", "Calciferol", "Thiamine"] },
-                { q: "Bakelite is an example of:", a: "C", opts: ["Elastomer", "Thermoplastic", "Thermosetting polymer", "Fiber"] },
-                { q: "Aspirin is used as a:", a: "B", opts: ["Antibiotic", "Antipyretic/Analgesic", "Antiseptic", "Antacid"] },
-                { q: "Copper matte mainly contains:", a: "A", opts: ["Cu₂S + FeS", "Cu₂O + FeO", "CuS + Cu₂O", "FeS + SiO₂"] },
-                { q: "Which base is NOT found in DNA?", a: "C", opts: ["Adenine", "Guanine", "Uracil", "Thymine"] },
-                { q: "Fog is which type of colloidal system?", a: "B", opts: ["Gas in liquid", "Liquid in gas", "Solid in gas", "Liquid in liquid"] }
+                { q: "Unit of Molarity?", a: "A", opts: ["mol/L", "mol/kg", "g/L", "None"] },
+                { q: "Bravais lattices count?", a: "B", opts: ["7", "14", "12", "9"] },
+                { q: "Gas in fuel cell?", a: "C", opts: ["N2", "O2", "H2", "CO2"] },
+                { q: "Zero order rate unit?", a: "C", opts: ["s-1", "L/mol-s", "mol/L-s", "mol/L"] },
+                { q: "Adsorption is?", a: "B", opts: ["Endo", "Exo", "Iso", "None"] },
+                { q: "Mond process for?", a: "C", opts: ["Cu", "Zn", "Ni", "Fe"] },
+                { q: "King of chemicals?", a: "C", opts: ["HCl", "HNO3", "H2SO4", "H3PO4"] },
+                { q: "d-block configuration?", a: "B", opts: ["nd ns", "(n-1)d ns", "nd10", "ns2"] },
+                { q: "Coordination No of [Co(en)3]3+?", a: "C", opts: ["3", "4", "6", "2"] },
+                { q: "C-X bond nature?", a: "C", opts: ["Pure", "Ionic", "Polar", "Non-polar"] },
+                { q: "Phenol + Zn dust?", a: "A", opts: ["Benzene", "Toluene", "Phenol", "Zinc"] },
+                { q: "Lucas reagent is?", a: "A", opts: ["HCl+ZnCl2", "Pd/BaSO4", "NaCl", "None"] },
+                { q: "Vitamin C name?", a: "B", opts: ["Retinol", "Ascorbic", "Thiamine", "None"] },
+                { q: "Bakelite example of?", a: "C", opts: ["Fiber", "Thermoplastic", "Thermosetting", "None"] },
+                { q: "Aspirin is?", a: "B", opts: ["Antibiotic", "Analgesic", "Antacid", "None"] },
+                { q: "Copper matte has?", a: "A", opts: ["Cu2S+FeS", "CuO", "CuS", "None"] },
+                { q: "DNA base NOT found?", a: "C", opts: ["A", "G", "U", "T"] },
+                { q: "Fog is?", a: "B", opts: ["Gas in Liq", "Liq in Gas", "Solid", "None"] },
+                { q: "Fehling test not for?", a: "C", opts: ["Methanal", "Ethanal", "Benzaldehyde", "None"] },
+                { q: "Amine nature?", a: "B", opts: ["Acidic", "Basic", "Neutral", "None"] }
             ],
             'Biology': [
-                { q: "Which of the following is true for ribosomes?", a: "B", opts: ["Membrane-bound", "Consist of RNA and protein", "Only in eukaryotes", "Synthesize lipids"] },
-                { q: "In C₄ plants, initial fixation of CO₂ occurs in:", a: "B", opts: ["Bundle sheath cells", "Mesophyll cells", "Guard cells", "Epidermal cells"] },
-                { q: "The oxygen released during photosynthesis comes from:", a: "B", opts: ["CO₂", "H₂O", "Glucose", "Chlorophyll"] },
-                { q: "Phase of meiosis for separation of homologous chromosomes?", a: "A", opts: ["Anaphase I", "Anaphase II", "Metaphase I", "Telophase II"] },
-                { q: "Nitrogenase is sensitive to:", a: "B", opts: ["Nitrogen", "Oxygen", "Hydrogen", "CO2"] },
-                { q: "Non-reducing sugar?", a: "C", opts: ["Glucose", "Fructose", "Sucrose", "Lactose"] },
-                { q: "Hormone for apical dominance?", a: "B", opts: ["Cytokinin", "Auxin", "Ethylene", "Gibberellin"] },
-                { q: "NOT a function of liver?", a: "C", opts: ["Bile secretion", "Detoxification", "Insulin production", "Glycogen storage"] },
-                { q: "Bohr effect is related to:", a: "D", opts: ["O2 binding", "CO2 transport", "pH effect", "All of above"] },
+                { q: "Ribosome nature?", a: "B", opts: ["Membrane", "RNA+Protein", "Lipid", "None"] },
+                { q: "C4 initial CO2 fix?", a: "B", opts: ["Bundle", "Mesophyll", "Guard", "None"] },
+                { q: "Oxygen in Photo. from?", a: "B", opts: ["CO2", "H2O", "Glucose", "None"] },
+                { q: "Meiosis separation?", a: "A", opts: ["Anaphase I", "Ana II", "Meta I", "None"] },
+                { q: "Nitrogenase sensitive to?", a: "B", opts: ["N", "O", "H", "None"] },
+                { q: "Non-reducing sugar?", a: "C", opts: ["Glucose", "Fructose", "Sucrose", "None"] },
+                { q: "Apical dominance hormone?", a: "B", opts: ["Cytokinin", "Auxin", "Ethylene", "None"] },
+                { q: "NOT liver function?", a: "C", opts: ["Bile", "Detox", "Insulin", "Glycogen"] },
+                { q: "Bohr effect related to?", a: "D", opts: ["O2", "CO2", "pH", "All"] },
                 { q: "Universal donor?", a: "D", opts: ["A", "B", "AB", "O"] },
-                { q: "Pacemaker of heart?", a: "B", opts: ["AV node", "SA node", "Bundle of His", "Purkinje fibers"] },
-                { q: "Night blindness deficiency?", a: "A", opts: ["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D"] },
-                { q: "Part of nephron for maximum reabsorption?", a: "A", opts: ["PCT", "DCT", "Loop of Henle", "Collecting duct"] },
-                { q: "Steroid hormone?", a: "C", opts: ["Insulin", "Adrenaline", "Testosterone", "Oxytocin"] },
-                { q: "Synapse is a junction between?", a: "D", opts: ["Two neurons", "Neuron & muscle", "Neuron & gland", "All of these"] },
-                { q: "Mendel’s law of independent assortment applies to:", a: "C", opts: ["Linked genes", "Same chromosome", "Different chromosomes", "Identical genes"] },
-                { q: "Genetic material in most organisms?", a: "B", opts: ["RNA", "DNA", "Protein", "Lipid"] },
-                { q: "Stop codon?", a: "B", opts: ["AUG", "UAA", "UGG", "GCU"] },
-                { q: "Crossing over leads to:", a: "B", opts: ["Mutation", "Recombination", "Replication", "Translation"] },
-                { q: "Haemophilia is:", a: "C", opts: ["Autosomal dominant", "Autosomal recessive", "X-linked recessive", "Y-linked"] },
-                { q: "PCR developed by:", a: "B", opts: ["Watson", "Kary Mullis", "Crick", "Mendel"] },
-                { q: "Restriction enzymes from:", a: "C", opts: ["Plants", "Animals", "Bacteria", "Viruses"] },
-                { q: "Vector in genetic engineering?", a: "C", opts: ["tRNA", "mRNA", "Plasmid", "Ribosome"] },
-                { q: "Penicillin discovered by?", a: "B", opts: ["Pasteur", "Fleming", "Koch", "Jenner"] },
-                { q: "Bt toxin produced by:", a: "B", opts: ["Virus", "Bacteria", "Fungi", "Plant"] },
-                { q: "Pyramid of energy is always:", a: "B", opts: ["Inverted", "Upright", "Circular", "Irregular"] },
-                { q: "Primary consumer?", a: "B", opts: ["Grass", "Cow", "Tiger", "Lion"] },
-                { q: "Ozone layer absorbs:", a: "B", opts: ["Infrared", "UV rays", "Visible", "X-rays"] },
-                { q: "Biodiversity hotspots have:", a: "B", opts: ["Low diversity", "High diversity", "No species", "Only animals"] },
-                { q: "Mutualism interaction:", a: "B", opts: ["One benefits", "Both benefit", "One harmed", "None benefit"] },
-                { q: "Organelle for protein packaging?", a: "B", opts: ["ER", "Golgi apparatus", "Lysosome", "Nucleus"] },
-                { q: "Site of glycolysis?", a: "B", opts: ["Mitochondria", "Cytoplasm", "Nucleus", "Chloroplast"] },
-                { q: "Respiratory rate in adults?", a: "A", opts: ["12–16/min", "20–25/min", "5–10/min", "30–40/min"] },
-                { q: "Hormone regulates blood sugar?", a: "B", opts: ["Thyroxine", "Insulin", "Estrogen", "Testosterone"] },
-                { q: "NOT a nucleotide base?", a: "D", opts: ["Adenine", "Guanine", "Uracil", "Glucose"] },
-                { q: "Pepsin works in:", a: "A", opts: ["Stomach", "Mouth", "Intestine", "Liver"] },
-                { q: "Darwin’s theory based on:", a: "B", opts: ["Mutation", "Natural selection", "Artificial selection", "Isolation"] },
-                { q: "Biodegradable pollutant?", a: "C", opts: ["Plastic", "Glass", "Paper", "Metal"] },
-                { q: "Gas used in photosynthesis?", a: "B", opts: ["O₂", "CO₂", "N₂", "H₂"] },
-                { q: "Organ filters blood?", a: "B", opts: ["Liver", "Kidney", "Heart", "Lung"] },
-                { q: "Unit of heredity?", a: "B", opts: ["Cell", "Gene", "Chromosome", "DNA"] },
-                { q: "Vector-borne disease?", a: "B", opts: ["Tuberculosis", "Malaria", "Cancer", "Diabetes"] },
-                { q: "Vitamin for blood clotting?", a: "D", opts: ["A", "B", "C", "K"] },
-                { q: "Organ for breathing?", a: "B", opts: ["Kidney", "Lung", "Liver", "Heart"] },
-                { q: "Brain part for balance?", a: "B", opts: ["Cerebrum", "Cerebellum", "Medulla", "Hypothalamus"] }
+                { q: "Pacemaker?", a: "B", opts: ["AV", "SA", "His", "None"] },
+                { q: "Night blindness?", a: "A", opts: ["Vit A", "Vit B", "Vit C", "None"] },
+                { q: "Max reabsorption in?", a: "A", opts: ["PCT", "DCT", "Loop", "None"] },
+                { q: "Steroid hormone?", a: "C", opts: ["Insulin", "Adrenaline", "Testosterone", "None"] },
+                { q: "Synapse junction?", a: "D", opts: ["Neuron-Neuron", "Neuron-Muscle", "Neuron-Gland", "All"] },
+                { q: "Stop codon?", a: "B", opts: ["AUG", "UAA", "UGG", "None"] },
+                { q: "Genetic material?", a: "B", opts: ["RNA", "DNA", "Protein", "None"] },
+                { q: "Crossing over results in?", a: "B", opts: ["Mutation", "Recombination", "None", "All"] },
+                { q: "Haemophilia is?", a: "C", opts: ["Auto Dom", "Auto Rec", "X-linked", "None"] },
+                { q: "PCR by?", a: "B", opts: ["Watson", "Mullis", "Crick", "None"] },
+                { q: "Energy pyramid is?", a: "B", opts: ["Inverted", "Upright", "Circular", "None"] },
+                { q: "Primary consumer?", a: "B", opts: ["Grass", "Cow", "Tiger", "None"] },
+                { q: "Ozone absorbs?", a: "B", opts: ["IR", "UV", "Visible", "X-ray"] },
+                { q: "Mutualism:", a: "B", opts: ["One+", "Both+", "Both-", "None"] },
+                { q: "Glycolysis site?", a: "B", opts: ["Mito", "Cyto", "Nucleus", "None"] },
+                { q: "Pepsin works in?", a: "A", opts: ["Stomach", "Mouth", "Liver", "None"] },
+                { q: "Darwin theory?", a: "B", opts: ["Mutation", "Natural Sel", "None", "All"] },
+                { q: "Blood filter?", a: "B", opts: ["Liver", "Kidney", "Heart", "None"] },
+                { q: "Heredity unit?", a: "B", opts: ["Cell", "Gene", "DNA", "None"] },
+                { q: "Vector disease?", a: "B", opts: ["TB", "Malaria", "Cancer", "None"] },
+                { q: "Clotting vitamin?", a: "D", opts: ["A", "B", "C", "K"] },
+                { q: "Brain balance part?", a: "B", opts: ["Cerebrum", "Cerebellum", "Medulla", "None"] },
+                // ... Baki questions is format mein added hain
+                { q: "Nitrogen base not in DNA?", a: "C", opts: ["A", "G", "U", "T"] },
+                { q: "Restriction enzyme source?", a: "C", opts: ["Plant", "Animal", "Bacteria", "None"] },
+                { q: "Bt toxin from?", a: "B", opts: ["Virus", "Bacteria", "Plant", "None"] },
+                { q: "Penicillin by?", a: "B", opts: ["Pasteur", "Fleming", "Koch", "None"] },
+                { q: "Hormone for apical dominance?", a: "B", opts: ["Cytokinin", "Auxin", "GA", "ABA"] },
+                { q: "Universal acceptor?", a: "C", opts: ["A", "B", "AB", "O"] },
+                { q: "Mendel worked on?", a: "B", opts: ["Rose", "Pea", "Rice", "Wheat"] },
+                { q: "Transcription site?", a: "B", opts: ["Cyto", "Nucleus", "Ribosome", "None"] },
+                { q: "RNA to Protein?", a: "B", opts: ["Trans", "Translation", "Replication", "None"] },
+                { q: "Pollen study?", a: "A", opts: ["Palynology", "Mycology", "None", "All"] },
+                { q: "Double fertilization by?", a: "B", opts: ["Mendel", "Nawaschin", "Bohr", "None"] },
+                { q: "Endosperm nature?", a: "C", opts: ["n", "2n", "3n", "4n"] },
+                { q: "Male gamete count in pollen tube?", a: "B", opts: ["1", "2", "3", "4"] }
             ]
         };
 
         function goToDashboard() {
-            const nameInput = document.getElementById('student-name');
-            const name = nameInput.value.trim();
-            if (name === "") return alert("Please enter your name!");
+            const name = document.getElementById('student-name').value.trim();
+            if (name === "") return alert("Naam likhiye!");
             localStorage.setItem('studentName', name);
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('dashboard-view').style.display = 'block';
@@ -188,7 +183,7 @@
             currentQuestions = questionsData[subject];
             currentQIndex = 0; score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            timeLeft = (subject === 'Biology') ? 2700 : 900; // Bio: 45m, Others: 15m
+            timeLeft = (subject === 'Biology') ? 2700 : 900; 
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             startTimer(); displayQuestion();
@@ -214,7 +209,11 @@
                 const div = document.createElement('div');
                 div.className = 'option-item' + (userAnswers[currentQIndex] === char ? ' selected' : '');
                 div.innerText = `${char}) ${opt}`;
-                div.onclick = () => { document.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); userAnswers[currentQIndex] = char; };
+                div.onclick = () => { 
+                    document.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected')); 
+                    div.classList.add('selected'); 
+                    userAnswers[currentQIndex] = char; 
+                };
                 box.appendChild(div);
             });
             document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
@@ -222,23 +221,41 @@
         }
 
         function nextQuestion() {
-            if(!userAnswers[currentQIndex]) return alert("Please select an answer!");
+            if(!userAnswers[currentQIndex]) return alert("Option select kijiye!");
             currentQIndex++; displayQuestion();
         }
 
         function submitExam() {
-            clearInterval(timerInterval); 
+            clearInterval(timerInterval);
             score = 0;
             const name = localStorage.getItem('studentName');
-            const list = document.getElementById('review-list'); 
+            const list = document.getElementById('review-list');
             list.innerHTML = '';
 
             currentQuestions.forEach((q, i) => {
                 const correct = (userAnswers[i] === q.a); if(correct) score++;
-                const div = document.createElement('div'); div.className = `review-item ${correct ? 'correct' : 'wrong'}`;
-                div.innerHTML = `<span class="status-badge">${correct ? 'CORRECT' : 'WRONG'}</span><p>Q${i+1}: ${q.q}</p><p>Ans: ${userAnswers[i] || 'None'} | Correct: ${q.a}</p>`;
+                const div = document.createElement('div');
+                div.className = `review-item ${correct ? 'correct' : 'wrong'}`;
+                div.innerHTML = `<p>Q${i+1}: ${q.q}</p><p>Your Ans: ${userAnswers[i] || 'None'} | Correct: ${q.a}</p>`;
                 list.appendChild(div);
             });
 
             document.getElementById('exam-view').style.display = 'none';
-            document.ge
+            document.getElementById('result-view').style.display = 'block';
+            document.getElementById('res-name').innerText = "Student: " + name;
+            document.getElementById('res-score').innerText = `${score} / ${currentQuestions.length}`;
+
+            // --- REPORT ---
+            const teacherNum = "917478471531";
+            const per = ((score / currentQuestions.length) * 100).toFixed(2);
+            const msg = `*RESULT*%0A*Name:* ${name}%0A*Sub:* ${currentSubject}%0A*Score:* ${score}/${currentQuestions.length}%0A*Percentage:* ${per}%25`;
+
+            setTimeout(() => {
+                if(confirm("Report teacher ko bhejein?")) {
+                    window.open(`https://wa.me/${teacherNum}?text=${msg}`, '_blank');
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

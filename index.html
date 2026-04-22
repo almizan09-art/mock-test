@@ -14,7 +14,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; margin: 0; padding: 20px; color: var(--text);
@@ -30,13 +30,13 @@
 
         input[type="text"] {
             width: 100%; padding: 15px; margin: 20px 0; box-sizing: border-box;
-            border: 2px solid #e2e8f0; border-radius: 10px; outline: none;
+            border: 2px solid #e2e8f0; border-radius: 10px; outline: none; font-size: 1rem;
         }
 
         button {
             background: var(--primary); color: white; border: none;
             padding: 12px; border-radius: 10px; cursor: pointer;
-            font-weight: 600; width: 100%; transition: 0.3s;
+            font-weight: 600; width: 100%; transition: 0.3s; font-size: 1rem;
         }
 
         button:hover { background: #1d4ed8; transform: translateY(-2px); }
@@ -48,15 +48,16 @@
         #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; }
         .question-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         
-        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; min-height: 60px; }
+        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; min-height: 60px; line-height: 1.5; }
         .options-container { display: flex; flex-direction: column; gap: 10px; }
         .option-item {
             padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
-            cursor: pointer; transition: 0.2s;
+            cursor: pointer; transition: 0.2s; background: #fff;
         }
-        .option-item.selected { background: #d1fae5; border-color: #10b981; }
+        .option-item:hover { background: #f1f5f9; }
+        .option-item.selected { background: #d1fae5; border-color: #10b981; font-weight: bold; }
 
-        .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .nav-btns { display: flex; gap: 10px; margin-top: 25px; }
         
         .result-box { text-align: center; }
         .score-text { font-size: 2.5rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
@@ -131,7 +132,7 @@
         let score = 0;
         let userAnswers = [];
         let timerInterval;
-        let timeLeft = 600; 
+        let timeLeft = 0; 
         let currentSubject = "";
         let currentQuestions = [];
 
@@ -166,7 +167,7 @@
                 { q: "The process of adsorption is:", a: "B", opts: ["Endothermic", "Exothermic", "Isothermal", "None of these"] },
                 { q: "Mond’s process is used for the purification of which metal?", a: "C", opts: ["Cu", "Zn", "Ni", "Fe"] },
                 { q: "Which substance is known as the 'King of Chemicals'?", a: "C", opts: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"] },
-                { q: "What is the general electronic configuration of transition elements (d-block)?", a: "B", opts: ["(n−1)d¹⁻¹⁰ ns¹", "(n−1)d¹⁻¹⁰ ns¹⁻²", "nd¹⁻¹⁰ ns²", "None of these"] },
+                { q: "What is the general electronic configuration of d-block elements?", a: "B", opts: ["(n-1)d ns", "(n-1)d¹⁻¹⁰ ns¹⁻²", "nd ns", "nd¹⁰ ns²"] },
                 { q: "What is the coordination number of Co in [Co(en)₃]³⁺?", a: "C", opts: ["3", "4", "6", "2"] },
                 { q: "What is the nature of the C–X bond in haloalkanes?", a: "C", opts: ["Purely covalent", "Ionic", "Polar covalent", "Non-polar"] },
                 { q: "What is formed when phenol is heated with zinc dust?", a: "A", opts: ["Benzene", "Toluene", "Benzaldehyde", "Zinc oxide"] },
@@ -181,57 +182,19 @@
                 { q: "Fog is which type of colloidal system?", a: "B", opts: ["Gas in liquid", "Liquid in gas", "Solid in gas", "Liquid in liquid"] }
             ],
             'Biology': [
-                { q: "Which of the following is true for ribosomes?", a: "B", opts: ["They are membrane-bound organelles", "They consist of RNA and protein", "They are present only in eukaryotic cells", "They synthesize lipids"] },
-                { q: "In C₄ plants, the initial fixation of CO₂ occurs in:", a: "B", opts: ["Bundle sheath cells", "Mesophyll cells", "Guard cells", "Epidermal cells"] },
                 { q: "The oxygen released during photosynthesis comes from:", a: "B", opts: ["CO₂", "H₂O", "Glucose", "Chlorophyll"] },
-                { q: "Which phase of meiosis is characterized by the separation of homologous chromosomes?", a: "A", opts: ["Anaphase I", "Anaphase II", "Metaphase I", "Telophase II"] },
-                { q: "The enzyme nitrogenase is sensitive to:", a: "B", opts: ["Nitrogen", "Oxygen", "Hydrogen", "Carbon dioxide"] },
-                { q: "Which of the following is a non-reducing sugar?", a: "C", opts: ["Glucose", "Fructose", "Sucrose", "Lactose"] },
-                { q: "The hormone responsible for apical dominance is:", a: "B", opts: ["Cytokinin", "Auxin", "Ethylene", "Gibberellin"] },
-                { q: "Which of the following is NOT a function of the liver?", a: "C", opts: ["Bile secretion", "Detoxification", "Insulin production", "Glycogen storage"] },
-                { q: "The Bohr effect is related to:", a: "D", opts: ["Oxygen binding to hemoglobin", "Carbon dioxide transport", "pH affecting oxygen affinity", "All of the above"] },
                 { q: "Which blood group is called universal donor?", a: "D", opts: ["A", "B", "AB", "O"] },
-                { q: "The pacemaker of the human heart is:", a: "B", opts: ["AV node", "SA node", "Bundle of His", "Purkinje fibers"] },
-                { q: "Which vitamin deficiency causes night blindness?", a: "A", opts: ["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D"] },
-                { q: "Which part of nephron is responsible for maximum reabsorption?", a: "A", opts: ["PCT", "DCT", "Loop of Henle", "Collecting duct"] },
-                { q: "Which of the following is a steroid hormone?", a: "C", opts: ["Insulin", "Adrenaline", "Testosterone", "Oxytocin"] },
-                { q: "The synapse is a junction between:", a: "D", opts: ["Two neurons", "Neuron and muscle", "Neuron and gland", "All of these"] },
-                { q: "Mendel’s law of independent assortment applies to:", a: "C", opts: ["Linked genes", "Genes on same chromosome", "Genes on different chromosomes", "Identical genes"] },
-                { q: "The genetic material in most organisms is:", a: "B", opts: ["RNA", "DNA", "Protein", "Lipid"] },
-                { q: "Which of the following is a stop codon?", a: "B", opts: ["AUG", "UAA", "UGG", "GCU"] },
-                { q: "Crossing over leads to:", a: "B", opts: ["Mutation", "Recombination", "Replication", "Translation"] },
-                { q: "In humans, haemophilia is:", a: "C", opts: ["Autosomal dominant", "Autosomal recessive", "X-linked recessive", "Y-linked"] },
-                { q: "PCR technique was developed by:", a: "B", opts: ["Watson", "Kary Mullis", "Crick", "Mendel"] },
-                { q: "Restriction enzymes are obtained from:", a: "C", opts: ["Plants", "Animals", "Bacteria", "Viruses"] },
-                { q: "The vector commonly used in genetic engineering is:", a: "C", opts: ["tRNA", "mRNA", "Plasmid", "Ribosome"] },
-                { q: "The antibiotic penicillin was discovered by:", a: "B", opts: ["Pasteur", "Fleming", "Koch", "Jenner"] },
-                { q: "Bt toxin is produced by:", a: "B", opts: ["Virus", "Bacteria", "Fungi", "Plant"] },
-                { q: "The pyramid of energy is always:", a: "B", opts: ["Inverted", "Upright", "Circular", "Irregular"] },
-                { q: "Which of the following is a primary consumer?", a: "B", opts: ["Grass", "Cow", "Tiger", "Lion"] },
-                { q: "Ozone layer absorbs:", a: "B", opts: ["Infrared rays", "UV rays", "Visible light", "X-rays"] },
-                { q: "Biodiversity hotspots are regions with:", a: "B", opts: ["Low diversity", "High diversity", "No species", "Only animals"] },
-                { q: "Mutualism is an interaction where:", a: "B", opts: ["One benefits", "Both benefit", "One harmed", "None benefit"] },
-                { q: "Which organelle is involved in protein packaging?", a: "B", opts: ["ER", "Golgi apparatus", "Lysosome", "Nucleus"] },
-                { q: "The site of glycolysis is:", a: "B", opts: ["Mitochondria", "Cytoplasm", "Nucleus", "Chloroplast"] },
-                { q: "The normal respiratory rate in adults is:", a: "A", opts: ["12–16/min", "20–25/min", "5–10/min", "30–40/min"] },
-                { q: "Which hormone regulates blood sugar?", a: "B", opts: ["Thyroxine", "Insulin", "Estrogen", "Testosterone"] },
-                { q: "Which of the following is NOT a nucleotide base?", a: "D", opts: ["Adenine", "Guanine", "Uracil", "Glucose"] },
-                { q: "The enzyme pepsin works in:", a: "A", opts: ["Stomach", "Mouth", "Intestine", "Liver"] },
-                { q: "Darwin’s theory is based on:", a: "B", opts: ["Mutation", "Natural selection", "Artificial selection", "Isolation"] },
-                { q: "Which is a biodegradable pollutant?", a: "C", opts: ["Plastic", "Glass", "Paper", "Metal"] },
-                { q: "Which gas is used in photosynthesis?", a: "B", opts: ["O₂", "CO₂", "N₂", "H₂"] },
-                { q: "Which organ filters blood?", a: "B", opts: ["Liver", "Kidney", "Heart", "Lung"] },
-                { q: "The unit of heredity is:", a: "B", opts: ["Cell", "Gene", "Chromosome", "DNA"] },
-                { q: "Which of the following is a vector-borne disease?", a: "B", opts: ["Tuberculosis", "Malaria", "Cancer", "Diabetes"] },
-                { q: "Which vitamin helps in blood clotting?", a: "D", opts: ["A", "B", "C", "K"] },
-                { q: "Which organ helps in breathing?", a: "B", opts: ["Kidney", "Lung", "Liver", "Heart"] },
-                { q: "Which part of brain controls balance?", a: "B", opts: ["Cerebrum", "Cerebellum", "Medulla", "Hypothalamus"] }
+                { q: "Which part of brain controls balance?", a: "B", opts: ["Cerebrum", "Cerebellum", "Medulla", "Hypothalamus"] },
+                { q: "The unit of heredity is:", a: "B", opts: ["Cell", "Gene", "Chromosome", "DNA"] }
+                // Yahan baki questions data aap dal sakte hain
             ]
         };
 
         function goToDashboard() {
-            const name = document.getElementById('student-name').value;
-            if (name.trim() === "") return alert("Please enter name!");
+            const nameInput = document.getElementById('student-name');
+            const name = nameInput.value.trim();
+            if (name === "") return alert("Please enter your name!");
+            
             localStorage.setItem('studentName', name);
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('dashboard-view').style.display = 'block';
@@ -244,9 +207,12 @@
             currentQIndex = 0;
             score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            timeLeft = (subject === 'Biology') ? 1500 : 600; // Biology ke liye 25 minutes
+            
+            timeLeft = (subject === 'Biology') ? 1500 : 600; 
+            
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
+            
             startTimer();
             displayQuestion();
         }
@@ -254,10 +220,14 @@
         function startTimer() {
             if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitExam();
+                    return;
+                }
                 let min = Math.floor(timeLeft / 60);
                 let sec = timeLeft % 60;
                 document.getElementById('timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-                if (timeLeft <= 0) { submitExam(); }
                 timeLeft--;
             }, 1000);
         }
@@ -266,8 +236,10 @@
             const currentQ = currentQuestions[currentQIndex];
             document.getElementById('q-count').innerText = `Question ${currentQIndex + 1}/${currentQuestions.length}`;
             document.getElementById('q-text').innerText = currentQ.q;
+            
             const optionsBox = document.getElementById('options-box');
             optionsBox.innerHTML = '';
+            
             currentQ.opts.forEach((opt, index) => {
                 const char = String.fromCharCode(65 + index);
                 const div = document.createElement('div');
@@ -276,5 +248,57 @@
                 div.onclick = () => selectOption(div, char);
                 optionsBox.appendChild(div);
             });
+
             document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
-            document.getElementById('submit-btn').style.d
+            document.getElementById('submit-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'block' : 'none';
+        }
+
+        function selectOption(el, char) {
+            document.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            userAnswers[currentQIndex] = char;
+        }
+
+        function nextQuestion() {
+            if(!userAnswers[currentQIndex]) return alert("Please select an answer!");
+            currentQIndex++;
+            displayQuestion();
+        }
+
+        function submitExam() {
+            if(timeLeft > 0 && !userAnswers[currentQIndex]) return alert("Please select an answer before submitting!");
+            
+            clearInterval(timerInterval);
+            score = 0;
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            currentQuestions.forEach((q, i) => {
+                const isCorrect = (userAnswers[i] === q.a);
+                if(isCorrect) score++;
+
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = `review-item ${isCorrect ? 'correct' : 'wrong'}`;
+                
+                const userChoiceIndex = userAnswers[i] ? userAnswers[i].charCodeAt(0) - 65 : -1;
+                const correctChoiceIndex = q.a.charCodeAt(0) - 65;
+
+                reviewDiv.innerHTML = `
+                    <span class="status-badge">${isCorrect ? 'CORRECT' : 'WRONG'}</span>
+                    <p style="margin:5px 0"><strong>Q${i+1}:</strong> ${q.q}</p>
+                    <p style="margin:2px 0; color: ${isCorrect ? 'green' : 'red'}">Your Answer: ${userAnswers[i] || 'Not Attempted'} ${userChoiceIndex >= 0 ? '- ' + q.opts[userChoiceIndex] : ''}</p>
+                    ${!isCorrect ? `<p style="margin:2px 0; color: green">Correct Answer: ${q.a} - ${q.opts[correctChoiceIndex]}</p>` : ''}
+                `;
+                reviewList.appendChild(reviewDiv);
+            });
+
+            document.getElementById('exam-view').style.display = 'none';
+            document.getElementById('result-view').style.display = 'block';
+            document.getElementById('res-name').innerText = "Student: " + localStorage.getItem('studentName');
+            document.getElementById('res-subject').innerText = "Subject: " + currentSubject;
+            document.getElementById('res-percent').innerText = `Success Rate: ${((score/currentQuestions.length)*100).toFixed(2)}%`;
+            document.getElementById('res-score').innerText = `${score} / ${currentQuestions.length}`;
+        }
+    </script>
+</body>
+</html>

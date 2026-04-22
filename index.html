@@ -115,7 +115,7 @@
             <p id="res-name" style="font-size: 1.2rem; font-weight: 500;"></p>
             <p id="res-subject" style="color: var(--primary); font-weight: bold;"></p>
             <p id="res-percent" style="font-size: 1.1rem; margin-top: 10px;"></p>
-            <div class="score-text" id="res-score">0 / 20</div>
+            <div class="score-text" id="res-score">0 / 0</div>
             
             <button onclick="location.reload()" style="margin-top:20px;">Restart Portal</button>
 
@@ -166,7 +166,7 @@
                 { q: "The process of adsorption is:", a: "B", opts: ["Endothermic", "Exothermic", "Isothermal", "None of these"] },
                 { q: "Mond’s process is used for the purification of which metal?", a: "C", opts: ["Cu", "Zn", "Ni", "Fe"] },
                 { q: "Which substance is known as the 'King of Chemicals'?", a: "C", opts: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"] },
-                { q: "What is the general electronic configuration of transition elements (d-block)?", a: "B", opts: ["(n−1)d¹⁻¹⁰ ns¹", "(n−1)d¹⁻¹⁰ ns¹⁻²", "(n−1)d¹⁻¹⁰ ns¹⁻²", "nd¹⁻¹⁰ ns²"] },
+                { q: "What is the general electronic configuration of transition elements (d-block)?", a: "B", opts: ["(n−1)d¹⁻¹⁰ ns¹", "(n−1)d¹⁻¹⁰ ns¹⁻²", "nd¹⁻¹⁰ ns²", "None of these"] },
                 { q: "What is the coordination number of Co in [Co(en)₃]³⁺?", a: "C", opts: ["3", "4", "6", "2"] },
                 { q: "What is the nature of the C–X bond in haloalkanes?", a: "C", opts: ["Purely covalent", "Ionic", "Polar covalent", "Non-polar"] },
                 { q: "What is formed when phenol is heated with zinc dust?", a: "A", opts: ["Benzene", "Toluene", "Benzaldehyde", "Zinc oxide"] },
@@ -244,7 +244,7 @@
             currentQIndex = 0;
             score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            timeLeft = (subject === 'Biology') ? 1200 : 600; // Biology ke liye 20 mins, baaki ke liye 10
+            timeLeft = (subject === 'Biology') ? 1500 : 600; // Biology ke liye 25 minutes
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             startTimer();
@@ -277,4 +277,4 @@
                 optionsBox.appendChild(div);
             });
             document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
-            document.getElementById('s
+            document.getElementById('submit-btn').style.d

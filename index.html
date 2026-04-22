@@ -251,7 +251,7 @@
             const msg = `*RESULT*%0A*Name:* ${name}%0A*Sub:* ${currentSubject}%0A*Score:* ${score}/${currentQuestions.length}%0A*Percentage:* ${per}%25`;
 
             setTimeout(() => {
-                if(confirm("Report teacher ko bhejein?")) {
+                if(confirm("Submit the report to the teacher")) {
                     window.open(`https://wa.me/${teacherNum}?text=${msg}`, '_blank');
                 }
             }, 1000);

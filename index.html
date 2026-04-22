@@ -1,187 +1,179 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Mock Test Platform</title>
+<title>Mock Test System</title>
 
 <style>
-body {
+body{
   font-family: Arial;
-  background: #0f172a;
-  color: white;
+  background:#0f172a;
+  color:white;
+  text-align:center;
 }
-
-.container {
-  width: 700px;
-  margin: auto;
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 10px;
+.container{
+  width:90%;
+  max-width:800px;
+  margin:auto;
+  background:#1e293b;
+  padding:20px;
+  border-radius:10px;
 }
-
-#timer {
-  color: #22c55e;
-  font-size: 18px;
+input,button{
+  padding:10px;
+  margin:5px;
 }
-
-.option {
-  background: #334155;
-  margin: 10px;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
+.option{
+  background:#334155;
+  padding:10px;
+  margin:8px;
+  cursor:pointer;
+  border-radius:5px;
 }
-
-.selected {
-  background: #22c55e;
-}
-
-.palette {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.palette div {
-  width: 30px;
-  height: 30px;
-  margin: 5px;
-  background: gray;
-  text-align: center;
-  cursor: pointer;
-}
-
-.answered {
-  background: green;
-}
-
-button {
-  padding: 10px;
-  margin: 5px;
-}
+.selected{background:#22c55e;}
+.hidden{display:none;}
 </style>
 
 </head>
-
 <body>
 
 <div class="container">
 
-<h2>Mock Test</h2>
-<div id="timer">Time: 120</div>
+<!-- LOGIN -->
+<div id="login">
+<h2>Login</h2>
+<input type="text" id="name" placeholder="Enter your name"><br>
+<button onclick="login()">Start</button>
+</div>
 
-<h3 id="question"></h3>
+<!-- SUBJECT -->
+<div id="subjects" class="hidden">
+<h2>Select Subject</h2>
+<button onclick="startTest('phy')">Physics</button>
+<button onclick="startTest('chem')">Chemistry</button>
+<button onclick="startTest('bio')">Biology</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="hidden">
+<h3 id="timer">Time: 300</h3>
+<h3 id="q"></h3>
 <div id="options"></div>
-
-<div>
-<button onclick="prev()">Prev</button>
 <button onclick="next()">Next</button>
 <button onclick="submit()">Submit</button>
 </div>
-
-<h3>Question Palette</h3>
-<div class="palette" id="palette"></div>
 
 <h2 id="result"></h2>
 
 </div>
 
 <script>
-const questions = [
-{
-q:"What is the unit of electric charge?",
-o:["Volt","Ampere","Coulomb","Ohm"],
-a:2
-},
-{
-q:"What do like charges do?",
-o:["Attract","Repel","Ignore","Combine"],
-a:1
-},
-{
-q:"What is the charge of an electron?",
-o:["Positive","Negative","Neutral","None"],
-a:1
-},
-{
-q:"What is the SI unit of current?",
-o:["Volt","Ampere","Ohm","Watt"],
-a:1
-},
-{
-q:"Who discovered electron?",
-o:["Newton","J.J. Thomson","Einstein","Bohr"],
-a:1
+
+let user="";
+let current=0;
+let answers=[];
+let questions=[];
+let time=300;
+
+// LOGIN
+function login(){
+user=document.getElementById("name").value;
+if(user===""){alert("Enter name"); return;}
+document.getElementById("login").classList.add("hidden");
+document.getElementById("subjects").classList.remove("hidden");
 }
-];
 
-let current = 0;
-let answers = [];
-let time = 120;
+// QUESTIONS DATA
+const data={
+phy:[
+{q:"Relation between electric field (E) and potential (V)?",o:["E=dV/dr","E=-dV/dr","V=dE/dr","V=-dE/dr"],a:1},
+{q:"Capacitance does NOT depend on?",o:["Shape","Size","Medium","Charge"],a:3},
+{q:"SI unit of resistance?",o:["Ampere","Volt","Ohm","Watt"],a:2},
+{q:"Kirchhoff loop rule based on?",o:["Charge","Momentum","Energy","Mass"],a:2},
+{q:"SI unit of magnetic flux?",o:["Tesla","Weber","Gauss","Henry"],a:1},
+{q:"Lenz law based on?",o:["Energy conservation","Charge","Mass","Momentum"],a:0},
+{q:"Transformer works on?",o:["Self induction","Mutual induction","Eddy current","TIR"],a:1},
+{q:"Speed of light max in?",o:["Glass","Water","Vacuum","Air"],a:2},
+{q:"Brewster law formula?",o:["sin","cos","tan","cot"],a:2},
+{q:"De Broglie wavelength?",o:["h/mv","hv/m","m/hv","hm/v"],a:0}
+],
 
-function loadQ() {
-let q = questions[current];
-document.getElementById("question").innerText = q.q;
+chem:[
+{q:"Unit of molarity?",o:["Mol/L","Mol/kg","g/L","None"],a:0},
+{q:"Total Bravais lattices?",o:["7","14","12","9"],a:1},
+{q:"Fuel cell uses?",o:["N2","O2","H2","CO2"],a:2},
+{q:"Zero order unit?",o:["s-1","Lmol-1s-1","molL-1s-1","molL-1"],a:2},
+{q:"Adsorption process?",o:["Endo","Exo","Iso","None"],a:1},
+{q:"Mond process for?",o:["Cu","Zn","Ni","Fe"],a:2},
+{q:"King of chemicals?",o:["HCl","HNO3","H2SO4","H3PO4"],a:2},
+{q:"Transition config?",o:["d ns1","d ns1-2","d5 ns1","nd ns2"],a:1},
+{q:"Coordination number Co?",o:["3","4","6","2"],a:2},
+{q:"C-X bond nature?",o:["Covalent","Ionic","Polar covalent","Non polar"],a:2}
+],
+
+bio:[
+{q:"Double fertilization in?",o:["Algae","Bryophyte","Angiosperm","Gymnosperm"],a:2},
+{q:"Fusion of gametes?",o:["Pollination","Syngamy","Parthenogenesis","Triple"],a:1},
+{q:"Sertoli cell function?",o:["Hormone","Nutrition","Sperm","Enzyme"],a:1},
+{q:"Copper T function?",o:["Ovulation","Fertilization","Zygote","Mutation"],a:1},
+{q:"Mendel plant?",o:["Wild pea","Garden pea","Sweet pea","Hemp"],a:1},
+{q:"Down syndrome?",o:["Mono","Null","Trisomy21","Trisomy18"],a:2},
+{q:"DNA to RNA?",o:["Replication","Translation","Transcription","Reverse"],a:2},
+{q:"Total codons?",o:["16","32","64","20"],a:2},
+{q:"Turner chromosomes?",o:["46","45","47","44"],a:1},
+{q:"Miller experiment?",o:["DNA","Protein","Life origin","Oxygen"],a:2}
+]
+};
+
+// START TEST
+function startTest(sub){
+questions=data[sub];
+document.getElementById("subjects").classList.add("hidden");
+document.getElementById("quiz").classList.remove("hidden");
+loadQ();
+}
+
+// LOAD QUESTION
+function loadQ(){
+let q=questions[current];
+document.getElementById("q").innerText=q.q;
 
 let html="";
 q.o.forEach((opt,i)=>{
-let sel = answers[current]==i?"selected":"";
-html += `<div class="option ${sel}" onclick="select(${i})">${opt}</div>`;
+let sel=answers[current]==i?"selected":"";
+html+=`<div class="option ${sel}" onclick="select(${i})">${opt}</div>`;
 });
-document.getElementById("options").innerHTML = html;
-updatePalette();
+document.getElementById("options").innerHTML=html;
 }
 
+// SELECT
 function select(i){
 answers[current]=i;
 loadQ();
 }
 
+// NEXT
 function next(){
 if(current<questions.length-1){current++;loadQ();}
 }
 
-function prev(){
-if(current>0){current--;loadQ();}
-}
-
+// SUBMIT
 function submit(){
 let score=0;
 questions.forEach((q,i)=>{
 if(answers[i]==q.a) score++;
 });
-document.getElementById("result").innerText =
-"Score: "+score+"/"+questions.length;
+document.getElementById("quiz").classList.add("hidden");
+document.getElementById("result").innerText=
+user+" Score: "+score+"/"+questions.length;
 }
 
-function createPalette(){
-let p="";
-questions.forEach((q,i)=>{
-p+=`<div onclick="jump(${i})" id="p${i}">${i+1}</div>`;
-});
-document.getElementById("palette").innerHTML=p;
-}
-
-function updatePalette(){
-questions.forEach((q,i)=>{
-let box=document.getElementById("p"+i);
-if(answers[i]!=undefined){
-box.classList.add("answered");
-}
-});
-}
-
-function jump(i){
-current=i;
-loadQ();
-}
-
+// TIMER
 setInterval(()=>{
 time--;
 document.getElementById("timer").innerText="Time: "+time;
 if(time<=0) submit();
 },1000);
 
-createPalette();
-loadQ();
 </script>
 
 </body>

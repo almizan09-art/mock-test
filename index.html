@@ -54,6 +54,10 @@
             cursor: pointer; transition: 0.2s;
         }
         .option-item:hover { background: #f1f5f9; border-color: var(--primary); }
+        
+        /* Result Style */
+        .result-box { text-align: center; }
+        .score-text { font-size: 2rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -82,16 +86,29 @@
         <hr>
         <div id="question-container">
             <div class="question" id="q-text">Loading question...</div>
-            <div class="options-container" id="options-box">
-                </div>
+            <div class="options-container" id="options-box"></div>
         </div>
         <br>
         <button onclick="submitExam()" style="background: var(--accent);">Submit Test</button>
     </div>
 
+    <div id="result-view" class="card" style="display:none;">
+        <div class="result-box">
+            <h2>Test Result</h2>
+            <p id="result-user-name"></p>
+            <div class="score-text" id="final-score">0 / 0</div>
+            <p id="result-msg"></p>
+            <button onclick="location.reload()" style="margin-top:20px;">Take Another Test</button>
+        </div>
+    </div>
+
     <script>
-        let timeLeft = 300; // 5 minutes
+        let timeLeft = 300; 
         let timerInterval;
+        let score = 0;
+        let totalQuestions = 1; // Filhaal 1 question hai demo ke liye
+        let selectedAnswer = "";
+        let correctAnswer = "Newton"; // Physics sample ke liye
 
         function goToDashboard() {
             const name = document.getElementById('student-name').value;
@@ -109,11 +126,8 @@
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             document.getElementById('display-subject').innerText = subject;
-            
-            // Start Timer
+            score = 0; 
             startTimer();
-            
-            // Load Sample Question
             loadQuestion(subject);
         }
 
@@ -122,12 +136,7 @@
                 let minutes = Math.floor(timeLeft / 60);
                 let seconds = timeLeft % 60;
                 document.getElementById('timer').innerText = `Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    alert("Time Over!");
-                    submitExam();
-                }
+                if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); }
                 timeLeft--;
             }, 1000);
         }
@@ -136,35 +145,56 @@
             const qText = document.getElementById('q-text');
             const optionsBox = document.getElementById('options-box');
             
-            // Sample data based on subject
             if(subject === 'Physics') {
                 qText.innerText = "What is the unit of Force?";
                 optionsBox.innerHTML = `
-                    <div class="option-item" onclick="selectOpt(this)">Newton</div>
-                    <div class="option-item" onclick="selectOpt(this)">Joule</div>
-                    <div class="option-item" onclick="selectOpt(this)">Watt</div>
-                    <div class="option-item" onclick="selectOpt(this)">Pascal</div>
+                    <div class="option-item" onclick="selectOpt(this, 'Newton')">Newton</div>
+                    <div class="option-item" onclick="selectOpt(this, 'Joule')">Joule</div>
+                    <div class="option-item" onclick="selectOpt(this, 'Watt')">Watt</div>
+                    <div class="option-item" onclick="selectOpt(this, 'Pascal')">Pascal</div>
                 `;
+                correctAnswer = "Newton";
             } else {
-                qText.innerText = "Sample question for " + subject;
-                optionsBox.innerHTML = `<div class="option-item">Option A</div><div class="option-item">Option B</div>`;
+                qText.innerText = "Sample question for " + subject + "?";
+                optionsBox.innerHTML = `
+                    <div class="option-item" onclick="selectOpt(this, 'A')">Option A</div>
+                    <div class="option-item" onclick="selectOpt(this, 'B')">Option B</div>
+                `;
+                correctAnswer = "A";
             }
         }
 
-        function selectOpt(element) {
-            // Remove background from all
-            document.querySelectorAll('.option-item').forEach(opt => opt.style.background = 'white');
-            // Add to selected
+        function selectOpt(element, value) {
+            document.querySelectorAll('.option-item').forEach(opt => {
+                opt.style.background = 'white';
+                opt.style.borderColor = '#cbd5e1';
+            });
             element.style.background = '#d1fae5';
             element.style.borderColor = '#10b981';
+            selectedAnswer = value;
         }
 
         function submitExam() {
             clearInterval(timerInterval);
-            alert("Test Submitted Successfully!");
-            location.reload(); // Restart portal
+            
+            // Check Score
+            if(selectedAnswer === correctAnswer) {
+                score = 1;
+            }
+
+            // Show Result View
+            document.getElementById('exam-view').style.display = 'none';
+            document.getElementById('result-view').style.display = 'block';
+            
+            document.getElementById('result-user-name').innerText = "Name: " + localStorage.getItem('studentName');
+            document.getElementById('final-score').innerText = score + " / " + totalQuestions;
+            
+            if(score === totalQuestions) {
+                document.getElementById('result-msg').innerText = "Excellent! You passed.";
+            } else {
+                document.getElementById('result-msg').innerText = "Better luck next time!";
+            }
         }
     </script>
-
 </body>
 </html>

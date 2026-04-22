@@ -1,151 +1,187 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Mock Test</title>
+<title>Mock Test Platform</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #eef2f7;
-      text-align: center;
-    }
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
 
-    .container {
-      width: 500px;
-      margin: 40px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px gray;
-    }
+.container {
+  width: 700px;
+  margin: auto;
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 10px;
+}
 
-    #timer {
-      font-size: 18px;
-      margin-bottom: 10px;
-      color: red;
-    }
+#timer {
+  color: #22c55e;
+  font-size: 18px;
+}
 
-    .option {
-      display: block;
-      margin: 10px;
-      padding: 10px;
-      background: #ddd;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+.option {
+  background: #334155;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
 
-    .selected {
-      background: #4CAF50;
-      color: white;
-    }
+.selected {
+  background: #22c55e;
+}
 
-    button {
-      padding: 10px;
-      margin: 5px;
-      cursor: pointer;
-    }
-  </style>
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.palette div {
+  width: 30px;
+  height: 30px;
+  margin: 5px;
+  background: gray;
+  text-align: center;
+  cursor: pointer;
+}
+
+.answered {
+  background: green;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+}
+</style>
 
 </head>
 
 <body>
 
 <div class="container">
-  <h2>Physics Mock Test</h2>
 
-  <div id="timer">Time: 60</div>
+<h2>Mock Test</h2>
+<div id="timer">Time: 120</div>
 
-  <h3 id="question"></h3>
-  <div id="options"></div>
+<h3 id="question"></h3>
+<div id="options"></div>
 
-  <div>
-    <button onclick="prevQuestion()">Prev</button>
-    <button onclick="nextQuestion()">Next</button>
-    <button onclick="submitTest()">Submit</button>
-  </div>
+<div>
+<button onclick="prev()">Prev</button>
+<button onclick="next()">Next</button>
+<button onclick="submit()">Submit</button>
+</div>
 
-  <h2 id="result"></h2>
+<h3>Question Palette</h3>
+<div class="palette" id="palette"></div>
+
+<h2 id="result"></h2>
+
 </div>
 
 <script>
 const questions = [
-  {
-    question: "Electric charge unit kya hai?",
-    options: ["Volt", "Ampere", "Coulomb", "Ohm"],
-    answer: 2
-  },
-  {
-    question: "Like charges kya karte hain?",
-    options: ["Attract", "Repel", "Ignore", "Combine"],
-    answer: 1
-  },
-  {
-    question: "Electron ka charge kya hota hai?",
-    options: ["Positive", "Negative", "Neutral", "None"],
-    answer: 1
-  }
+{
+q:"What is the unit of electric charge?",
+o:["Volt","Ampere","Coulomb","Ohm"],
+a:2
+},
+{
+q:"What do like charges do?",
+o:["Attract","Repel","Ignore","Combine"],
+a:1
+},
+{
+q:"What is the charge of an electron?",
+o:["Positive","Negative","Neutral","None"],
+a:1
+},
+{
+q:"What is the SI unit of current?",
+o:["Volt","Ampere","Ohm","Watt"],
+a:1
+},
+{
+q:"Who discovered electron?",
+o:["Newton","J.J. Thomson","Einstein","Bohr"],
+a:1
+}
 ];
 
 let current = 0;
 let answers = [];
-let time = 60;
+let time = 120;
 
-function loadQuestion() {
-  let q = questions[current];
-  document.getElementById("question").innerText = q.question;
+function loadQ() {
+let q = questions[current];
+document.getElementById("question").innerText = q.q;
 
-  let optionsHTML = "";
-  q.options.forEach((opt, i) => {
-    let selected = answers[current] === i ? "selected" : "";
-    optionsHTML += `<div class="option ${selected}" onclick="selectOption(${i})">${opt}</div>`;
-  });
-
-  document.getElementById("options").innerHTML = optionsHTML;
+let html="";
+q.o.forEach((opt,i)=>{
+let sel = answers[current]==i?"selected":"";
+html += `<div class="option ${sel}" onclick="select(${i})">${opt}</div>`;
+});
+document.getElementById("options").innerHTML = html;
+updatePalette();
 }
 
-function selectOption(i) {
-  answers[current] = i;
-  loadQuestion();
+function select(i){
+answers[current]=i;
+loadQ();
 }
 
-function nextQuestion() {
-  if (current < questions.length - 1) {
-    current++;
-    loadQuestion();
-  }
+function next(){
+if(current<questions.length-1){current++;loadQ();}
 }
 
-function prevQuestion() {
-  if (current > 0) {
-    current--;
-    loadQuestion();
-  }
+function prev(){
+if(current>0){current--;loadQ();}
 }
 
-function submitTest() {
-  let score = 0;
-
-  questions.forEach((q, i) => {
-    if (answers[i] === q.answer) score++;
-  });
-
-  document.getElementById("result").innerText =
-    "Your Score: " + score + " / " + questions.length;
+function submit(){
+let score=0;
+questions.forEach((q,i)=>{
+if(answers[i]==q.a) score++;
+});
+document.getElementById("result").innerText =
+"Score: "+score+"/"+questions.length;
 }
 
-// Timer
-let timer = setInterval(() => {
-  time--;
-  document.getElementById("timer").innerText = "Time: " + time;
+function createPalette(){
+let p="";
+questions.forEach((q,i)=>{
+p+=`<div onclick="jump(${i})" id="p${i}">${i+1}</div>`;
+});
+document.getElementById("palette").innerHTML=p;
+}
 
-  if (time <= 0) {
-    clearInterval(timer);
-    submitTest();
-  }
-}, 1000);
+function updatePalette(){
+questions.forEach((q,i)=>{
+let box=document.getElementById("p"+i);
+if(answers[i]!=undefined){
+box.classList.add("answered");
+}
+});
+}
 
-// Start
-loadQuestion();
+function jump(i){
+current=i;
+loadQ();
+}
+
+setInterval(()=>{
+time--;
+document.getElementById("timer").innerText="Time: "+time;
+if(time<=0) submit();
+},1000);
+
+createPalette();
+loadQ();
 </script>
 
 </body>

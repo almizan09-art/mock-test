@@ -1,268 +1,143 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Mock Test System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Online Exam Portal</title>
+    <style>
+        /* CSS Section */
+        :root {
+            --primary: #2563eb;
+            --secondary: #f8fafc;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --text: #1e293b;
+        }
 
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f1f5f9;
-}
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text);
+        }
 
-/* HEADER */
-.header{
-  background:#0f172a;
-  color:white;
-  padding:15px;
-  display:flex;
-  justify-content:space-between;
-  font-size:18px;
-}
+        .card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 550px;
+            transition: all 0.3s ease;
+        }
 
-/* MAIN */
-.container{
-  display:flex;
-  height:90vh;
-}
+        h2 { color: var(--primary); text-align: center; margin-top: 0; }
 
-/* LEFT */
-.left{
-  width:70%;
-  padding:30px;
-}
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+        }
 
-/* QUESTION CARD */
-.card{
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.1);
-}
+        input[type="text"]:focus { border-color: var(--primary); }
 
-/* OPTIONS */
-.option{
-  background:#f8fafc;
-  padding:12px;
-  margin:10px 0;
-  border-radius:8px;
-  cursor:pointer;
-  border:1px solid #ccc;
-  transition:0.3s;
-}
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
 
-.option:hover{
-  background:#e2e8f0;
-}
+        button:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-.selected{
-  background:#22c55e;
-  color:white;
-}
+        .subject-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
 
-/* BUTTONS */
-button{
-  padding:10px 20px;
-  margin:10px 5px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  background:#2563eb;
-  color:white;
-}
+        .sub-btn { background: #4b5563; }
+        .sub-btn:hover { background: var(--accent); }
 
-button:hover{
-  background:#1d4ed8;
-}
+        .exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
 
-/* RIGHT PANEL */
-.right{
-  width:30%;
-  background:#e2e8f0;
-  padding:20px;
-}
+        #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; }
 
-/* PALETTE */
-.palette{
-  display:flex;
-  flex-wrap:wrap;
-}
+        .question-item {
+            background: var(--secondary);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
 
-.palette div{
-  width:40px;
-  height:40px;
-  margin:5px;
-  background:#64748b;
-  text-align:center;
-  line-height:40px;
-  cursor:pointer;
-  color:white;
-  border-radius:5px;
-}
+        .option-label {
+            display: block;
+            padding: 10px;
+            margin: 8px 0;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
 
-.answered{
-  background:#22c55e;
-}
+        .option-label:hover { background: #f1f5f9; border-color: var(--primary); }
 
-/* LOGIN */
-.center{
-  text-align:center;
-  margin-top:100px;
-}
+        .result-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-align: center;
+            margin: 20px 0;
+        }
 
-input{
-  padding:10px;
-  width:200px;
-}
-
-.hidden{display:none;}
-</style>
+        .action-btns { display: flex; gap: 10px; flex-direction: column; }
+        .wa-btn { background: #25D366; }
+        .wa-btn:hover { background: #128C7E; }
+    </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
-<div id="login" class="center">
-<h2>Start Mock Test</h2>
-<input id="name" placeholder="Enter Name"><br><br>
-<button onclick="login()">Start Test</button>
-</div>
+    <div id="login-view" class="card">
+        <h2>Student Portal</h2>
+        <p style="text-align: center; color: #64748b;">Enter your name to start the session</p>
+        <input type="text" id="student-name" placeholder="Full Name">
+        <button onclick="goToDashboard()">Start Test Session</button>
+    </div>
 
-<!-- SUBJECT -->
-<div id="subject" class="center hidden">
-<h2>Select Subject</h2>
-<button onclick="start('phy')">Physics</button>
-<button onclick="start('chem')">Chemistry</button>
-<button onclick="start('bio')">Biology</button>
-</div>
+    <div id="dashboard-view" class="card" style="display:none;">
+        <h2>Select Subject</h2>
+        <div class="subject-grid">
+            <button class="sub-btn" onclick="startTest('Physics')">Physics (Mix Test)</button>
+            <button class="sub-btn" onclick="startTest('Chemistry')">Chemistry (Mix Test)</button>
+            <button class="sub-btn" onclick="startTest('Biology')">Biology (Mix Test)</button>
+        </div>
+    </div>
 
-<!-- TEST -->
-<div id="test" class="hidden">
-
-<div class="header">
-<div id="user"></div>
-<div id="timer">Time: 600</div>
-</div>
-
-<div class="container">
-
-<div class="left">
-<div class="card">
-<h3 id="q"></h3>
-<div id="options"></div>
-
-<div style="text-align:center;">
-<button onclick="prev()">Prev</button>
-<button onclick="next()">Next</button>
-<button onclick="submit()">Submit</button>
-</div>
-</div>
-</div>
-
-<div class="right">
-<h3>Questions</h3>
-<div id="palette" class="palette"></div>
-</div>
-
-</div>
-</div>
-
-<h2 id="result" style="text-align:center;"></h2>
-
-<script>
-
-let user="";
-let qIndex=0;
-let answers=[];
-let questions=[];
-let time=600;
-
-function login(){
-user=document.getElementById("name").value;
-if(user==""){alert("Enter name");return;}
-document.getElementById("login").classList.add("hidden");
-document.getElementById("subject").classList.remove("hidden");
-}
-
-const data={
-phy:[
-{q:"SI unit of resistance?",o:["Ampere","Volt","Ohm","Watt"],a:2},
-{q:"Speed of light max in?",o:["Glass","Water","Vacuum","Air"],a:2}
-],
-chem:[
-{q:"Unit of molarity?",o:["Mol/L","Mol/kg","g/L","None"],a:0}
-],
-bio:[
-{q:"Double fertilization occurs in?",o:["Algae","Bryophytes","Angiosperms","Gymnosperms"],a:2}
-]
-};
-
-function start(sub){
-questions=data[sub];
-document.getElementById("subject").classList.add("hidden");
-document.getElementById("test").classList.remove("hidden");
-document.getElementById("user").innerText="User: "+user;
-createPalette();
-loadQ();
-}
-
-function loadQ(){
-let q=questions[qIndex];
-document.getElementById("q").innerText=(qIndex+1)+". "+q.q;
-
-let html="";
-q.o.forEach((opt,i)=>{
-let sel=answers[qIndex]==i?"selected":"";
-html+=`<div class="option ${sel}" onclick="select(${i})">${opt}</div>`;
-});
-document.getElementById("options").innerHTML=html;
-updatePalette();
-}
-
-function select(i){
-answers[qIndex]=i;
-loadQ();
-}
-
-function next(){ if(qIndex<questions.length-1){qIndex++;loadQ();}}
-function prev(){ if(qIndex>0){qIndex--;loadQ();}}
-
-function createPalette(){
-let html="";
-questions.forEach((_,i)=>{
-html+=`<div id="p${i}" onclick="jump(${i})">${i+1}</div>`;
-});
-document.getElementById("palette").innerHTML=html;
-}
-
-function updatePalette(){
-questions.forEach((_,i)=>{
-let box=document.getElementById("p"+i);
-if(answers[i]!=undefined){
-box.classList.add("answered");
-}
-});
-}
-
-function jump(i){qIndex=i;loadQ();}
-
-function submit(){
-let score=0;
-questions.forEach((q,i)=>{
-if(answers[i]==q.a) score++;
-});
-document.getElementById("test").classList.add("hidden");
-document.getElementById("result").innerText=
-user+" Score: "+score+"/"+questions.length;
-}
-
-setInterval(()=>{
-time--;
-document.getElementById("timer").innerText="Time: "+time;
-if(time<=0) submit();
-},1000);
-
-</script>
-
-</body>
-</html>
+    <div id="exam-view" class="card" style="display:none; max-width: 700px;">
+        <div class="exam-header">
+            <h3 id="display-subject">Subject</h3>

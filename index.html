@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Professional Online Exam Portal</title>
     <style>
-        /* CSS Section - Keeping your original styles */
         :root {
             --primary: #2563eb;
             --secondary: #f8fafc;
@@ -15,66 +14,46 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            color: var(--text);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; color: var(--text);
         }
 
         .card {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 20px;
+            background: white; padding: 2.5rem; border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            width: 90%;
-            max-width: 550px;
-            transition: all 0.3s ease;
+            width: 90%; max-width: 550px;
         }
 
         h2 { color: var(--primary); text-align: center; margin-top: 0; }
 
         input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            margin: 20px 0;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            outline: none;
+            width: 100%; padding: 15px; margin: 20px 0;
+            border: 2px solid #e2e8f0; border-radius: 10px; outline: none;
         }
 
-        input[type="text"]:focus { border-color: var(--primary); }
-
         button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            transition: 0.3s;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            background: var(--primary); color: white; border: none;
+            padding: 15px; border-radius: 10px; cursor: pointer;
+            font-weight: 600; width: 100%; transition: 0.3s;
         }
 
         button:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-        .subject-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
+        .subject-grid { display: grid; gap: 15px; margin-top: 20px; }
         .sub-btn { background: #4b5563; }
         .sub-btn:hover { background: var(--accent); }
+
+        /* Exam View Styles */
+        #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; text-align: right; }
+        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; }
+        .options-container { display: flex; flex-direction: column; gap: 10px; }
+        .option-item {
+            padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .option-item:hover { background: #f1f5f9; border-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -95,30 +74,95 @@
         </div>
     </div>
 
+    <div id="exam-view" class="card" style="display:none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="display-subject" style="color: var(--primary);">Subject</h3>
+            <div id="timer">Time: 05:00</div>
+        </div>
+        <hr>
+        <div id="question-container">
+            <div class="question" id="q-text">Loading question...</div>
+            <div class="options-container" id="options-box">
+                </div>
+        </div>
+        <br>
+        <button onclick="submitExam()" style="background: var(--accent);">Submit Test</button>
+    </div>
+
     <script>
-        // JS Logic to handle the views
+        let timeLeft = 300; // 5 minutes
+        let timerInterval;
+
         function goToDashboard() {
-            const nameInput = document.getElementById('student-name').value;
-            
-            if (nameInput.trim() === "") {
-                alert("Please enter your name first!");
+            const name = document.getElementById('student-name').value;
+            if (name.trim() === "") {
+                alert("Please enter your name!");
                 return;
             }
-
-            // Save name for later use
-            localStorage.setItem('studentName', nameInput);
-            
-            // UI Switch
+            localStorage.setItem('studentName', name);
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('dashboard-view').style.display = 'block';
-            
-            // Personalize welcome message
-            document.getElementById('welcome-text').innerText = "Welcome, " + nameInput + "! Select Subject";
+            document.getElementById('welcome-text').innerText = "Welcome, " + name + "! Select Subject";
         }
 
         function startTest(subject) {
-            alert("Starting " + subject + " test for " + localStorage.getItem('studentName'));
-            // Yahan aap apna exam logic ya next screen add kar sakte hain
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('exam-view').style.display = 'block';
+            document.getElementById('display-subject').innerText = subject;
+            
+            // Start Timer
+            startTimer();
+            
+            // Load Sample Question
+            loadQuestion(subject);
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById('timer').innerText = `Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Time Over!");
+                    submitExam();
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function loadQuestion(subject) {
+            const qText = document.getElementById('q-text');
+            const optionsBox = document.getElementById('options-box');
+            
+            // Sample data based on subject
+            if(subject === 'Physics') {
+                qText.innerText = "What is the unit of Force?";
+                optionsBox.innerHTML = `
+                    <div class="option-item" onclick="selectOpt(this)">Newton</div>
+                    <div class="option-item" onclick="selectOpt(this)">Joule</div>
+                    <div class="option-item" onclick="selectOpt(this)">Watt</div>
+                    <div class="option-item" onclick="selectOpt(this)">Pascal</div>
+                `;
+            } else {
+                qText.innerText = "Sample question for " + subject;
+                optionsBox.innerHTML = `<div class="option-item">Option A</div><div class="option-item">Option B</div>`;
+            }
+        }
+
+        function selectOpt(element) {
+            // Remove background from all
+            document.querySelectorAll('.option-item').forEach(opt => opt.style.background = 'white');
+            // Add to selected
+            element.style.background = '#d1fae5';
+            element.style.borderColor = '#10b981';
+        }
+
+        function submitExam() {
+            clearInterval(timerInterval);
+            alert("Test Submitted Successfully!");
+            location.reload(); // Restart portal
         }
     </script>
 

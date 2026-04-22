@@ -9,19 +9,19 @@
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; color: var(--text); }
         .card { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
         h2 { color: var(--primary); text-align: center; margin-top: 0; }
-        input[type="text"] { width: 100%; padding: 15px; margin: 20px 0; border: 2px solid #e2e8f0; border-radius: 10px; outline: none; }
-        button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.3s; }
+        input[type="text"] { width: 100%; padding: 15px; margin: 20px 0; border: 2px solid #e2e8f0; border-radius: 10px; outline: none; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.3s; margin-top: 10px; }
         button:hover { background: #1d4ed8; transform: translateY(-2px); }
         .subject-grid { display: grid; gap: 15px; margin-top: 20px; }
         .sub-btn { background: #4b5563; }
         .sub-btn:hover { background: var(--accent); }
         #timer { color: var(--danger); font-weight: bold; font-size: 1.2rem; }
         .question-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; min-height: 60px; }
+        .question { margin: 20px 0; font-size: 1.1rem; font-weight: bold; min-height: 60px; line-height: 1.4; }
         .options-container { display: flex; flex-direction: column; gap: 10px; }
-        .option-item { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .option-item.selected { background: #d1fae5; border-color: #10b981; }
-        .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .option-item { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; transition: 0.2s; background: #fff; }
+        .option-item.selected { background: #d1fae5; border-color: #10b981; font-weight: 600; }
+        .nav-btns { display: flex; gap: 10px; margin-top: 25px; }
         .result-box { text-align: center; }
         .score-text { font-size: 2.5rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
         .review-section { margin-top: 30px; text-align: left; border-top: 2px solid #eee; padding-top: 20px; }
@@ -67,10 +67,11 @@
     <div id="result-view" class="card" style="display:none;">
         <div class="result-box">
             <h2>Exam Completed!</h2>
-            <p id="res-name"></p>
+            <p id="res-name" style="font-size: 1.2rem;"></p>
             <p id="res-subject" style="color: var(--primary); font-weight: bold;"></p>
             <div class="score-text" id="res-score">0 / 0</div>
-            <button onclick="location.reload()">Restart Portal</button>
+            <p style="color: #666; font-size: 0.9rem;">The report is being sent to teacher at 7478471531.</p>
+            <button onclick="location.reload()" style="background: #4b5563;">Restart Portal</button>
             <div class="review-section"><h3>Answer Review</h3><div id="review-list"></div></div>
         </div>
     </div>
@@ -80,13 +81,48 @@
 
         const questionsData = {
             'Physics': [
-                { q: "Relation between E and V?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
-                { q: "Capacitance depends on?", a: "D", opts: ["Shape", "Size", "Medium", "Charge"] }
-                // (Baki physics questions yahan add kar sakte hain)
+                { q: "What is the correct relation between electric field intensity (E) and potential (V)?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
+                { q: "The capacitance of a capacitor does NOT depend on:", a: "D", opts: ["Shape of the plates", "Size of the plates", "Medium between the plates", "Charge on the plates"] },
+                { q: "What is the SI unit of resistance?", a: "C", opts: ["Ampere", "Volt", "Ohm (Ω)", "Watt"] },
+                { q: "Kirchhoff’s second law (Loop Rule) is based on the conservation of:", a: "C", opts: ["Charge", "Momentum", "Energy", "Mass"] },
+                { q: "What is the SI unit of magnetic flux?", a: "B", opts: ["Tesla", "Weber", "Gauss", "Henry"] },
+                { q: "Lenz’s Law is based on which principle?", a: "A", opts: ["Conservation of energy", "Conservation of charge", "Conservation of mass", "Conservation of momentum"] },
+                { q: "A transformer works on the principle of:", a: "B", opts: ["Self-induction", "Mutual induction", "Eddy currents", "Total internal reflection"] },
+                { q: "The speed of light is maximum in:", a: "C", opts: ["Glass", "Water", "Vacuum", "Air"] },
+                { q: "What is the formula of Brewster’s Law?", a: "C", opts: ["μ = sin(iₚ)", "μ = cos(iₚ)", "μ = tan(iₚ)", "μ = cot(iₚ)"] },
+                { q: "What is the correct formula for De Broglie wavelength?", a: "A", opts: ["λ = h/mv", "λ = hv/m", "λ = m/hv", "λ = hm/v"] },
+                { q: "Who proposed the 'Plum Pudding Model' of the atom?", a: "C", opts: ["Rutherford", "Bohr", "J.J. Thomson", "Dalton"] },
+                { q: "In a P-type semiconductor, the majority charge carriers are:", a: "B", opts: ["Electrons", "Holes", "Neutrons", "Protons"] },
+                { q: "Which electromagnetic wave has the highest frequency?", a: "B", opts: ["UV rays", "Gamma rays", "X-rays", "Radio waves"] },
+                { q: "What is the mirror formula?", a: "B", opts: ["1/f = 1/v - 1/u", "1/f = 1/v + 1/u", "f = u + v", "f = uv"] },
+                { q: "The shining (brilliance) of a diamond is due to:", a: "C", opts: ["Interference", "Diffraction", "Total internal reflection", "Refraction"] },
+                { q: "Who discovered the photoelectric effect?", a: "B", opts: ["Einstein", "Hertz", "Newton", "Maxwell"] },
+                { q: "Which series of the hydrogen spectrum lies in the visible region?", a: "B", opts: ["Lyman series", "Balmer series", "Paschen series", "Pfund series"] },
+                { q: "What is the Boolean expression of a NOR gate?", a: "C", opts: ["Y = A + B", "Y = A · B", "Y = (A + B)̅", "Y = (A · B)̅"] },
+                { q: "Binding energy per nucleon is maximum for:", a: "C", opts: ["Helium", "Uranium", "Iron (Fe)", "Oxygen"] },
+                { q: "What is the unit of power of a lens?", a: "B", opts: ["Meter", "Dioptre (D)", "Candela", "Watt"] }
             ],
             'Chemistry': [
-                { q: "Unit of Molarity?", a: "A", opts: ["mol/L", "mol/kg", "g/L", "No unit"] }
-                // (Baki chemistry questions yahan add kar sakte hain)
+                { q: "What is the unit of 'Molarity'?", a: "A", opts: ["mol/L", "mol/kg", "g/L", "No unit"] },
+                { q: "What is the total number of Bravais lattices?", a: "B", opts: ["7", "14", "12", "9"] },
+                { q: "Which gas is used in a fuel cell?", a: "C", opts: ["N₂", "O₂", "H₂", "CO₂"] },
+                { q: "What is the unit of rate constant for a zero-order reaction?", a: "C", opts: ["s⁻¹", "L·mol⁻¹·s⁻¹", "mol·L⁻¹·s⁻¹", "mol·L⁻¹"] },
+                { q: "The process of adsorption is:", a: "B", opts: ["Endothermic", "Exothermic", "Isothermal", "None of these"] },
+                { q: "Mond’s process is used for the purification of which metal?", a: "C", opts: ["Cu", "Zn", "Ni", "Fe"] },
+                { q: "Which substance is known as the 'King of Chemicals'?", a: "C", opts: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"] },
+                { q: "General electronic configuration of d-block elements:", a: "B", opts: ["(n-1)d ns", "(n-1)d¹⁻¹⁰ ns¹⁻²", "nd ns", "nd¹⁰ ns²"] },
+                { q: "What is the coordination number of Co in [Co(en)₃]³⁺?", a: "C", opts: ["3", "4", "6", "2"] },
+                { q: "What is the nature of the C–X bond in haloalkanes?", a: "C", opts: ["Purely covalent", "Ionic", "Polar covalent", "Non-polar"] },
+                { q: "What is formed when phenol is heated with zinc dust?", a: "A", opts: ["Benzene", "Toluene", "Benzaldehyde", "Zinc oxide"] },
+                { q: "Lucas Reagent is a mixture of:", a: "A", opts: ["HCl + anhydrous ZnCl₂", "HNO₃ + H₂SO₄", "Pd/BaSO₄", "NaCl + ZnCl₂"] },
+                { q: "Fehling’s solution test is NOT given by which compound?", a: "C", opts: ["Methanal", "Ethanal", "Benzaldehyde", "Propanal"] },
+                { q: "What is the nature of amines?", a: "B", opts: ["Acidic", "Basic", "Neutral", "Amphoteric"] },
+                { q: "What is the chemical name of Vitamin C?", a: "B", opts: ["Retinol", "Ascorbic acid", "Calciferol", "Thiamine"] },
+                { q: "Bakelite is an example of:", a: "C", opts: ["Elastomer", "Thermoplastic", "Thermosetting polymer", "Fiber"] },
+                { q: "Aspirin is used as a:", a: "B", opts: ["Antibiotic", "Antipyretic/Analgesic", "Antiseptic", "Antacid"] },
+                { q: "Copper matte mainly contains:", a: "A", opts: ["Cu₂S + FeS", "Cu₂O + FeO", "CuS + Cu₂O", "FeS + SiO₂"] },
+                { q: "Which base is NOT found in DNA?", a: "C", opts: ["Adenine", "Guanine", "Uracil", "Thymine"] },
+                { q: "Fog is which type of colloidal system?", a: "B", opts: ["Gas in liquid", "Liquid in gas", "Solid in gas", "Liquid in liquid"] }
             ],
             'Biology': [
                 { q: "Which of the following is true for ribosomes?", a: "B", opts: ["Membrane-bound", "Consist of RNA and protein", "Only in eukaryotes", "Synthesize lipids"] },
@@ -138,8 +174,9 @@
         };
 
         function goToDashboard() {
-            const name = document.getElementById('student-name').value;
-            if (name.trim() === "") return alert("Please enter name!");
+            const nameInput = document.getElementById('student-name');
+            const name = nameInput.value.trim();
+            if (name === "") return alert("Please enter your name!");
             localStorage.setItem('studentName', name);
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('dashboard-view').style.display = 'block';
@@ -151,7 +188,7 @@
             currentQuestions = questionsData[subject];
             currentQIndex = 0; score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            timeLeft = (subject === 'Biology') ? 1800 : 600; // Bio: 30 Mins, Others: 10 Mins
+            timeLeft = (subject === 'Biology') ? 2700 : 900; // Bio: 45m, Others: 15m
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             startTimer(); displayQuestion();
@@ -162,7 +199,7 @@
             timerInterval = setInterval(() => {
                 let min = Math.floor(timeLeft / 60), sec = timeLeft % 60;
                 document.getElementById('timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-                if (timeLeft <= 0) submitExam();
+                if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); }
                 timeLeft--;
             }, 1000);
         }
@@ -184,22 +221,24 @@
             document.getElementById('submit-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'block' : 'none';
         }
 
-        function nextQuestion() { if(!userAnswers[currentQIndex]) return alert("Select answer!"); currentQIndex++; displayQuestion(); }
+        function nextQuestion() {
+            if(!userAnswers[currentQIndex]) return alert("Please select an answer!");
+            currentQIndex++; displayQuestion();
+        }
 
         function submitExam() {
-            clearInterval(timerInterval); score = 0;
-            const list = document.getElementById('review-list'); list.innerHTML = '';
+            clearInterval(timerInterval); 
+            score = 0;
+            const name = localStorage.getItem('studentName');
+            const list = document.getElementById('review-list'); 
+            list.innerHTML = '';
+
             currentQuestions.forEach((q, i) => {
                 const correct = (userAnswers[i] === q.a); if(correct) score++;
                 const div = document.createElement('div'); div.className = `review-item ${correct ? 'correct' : 'wrong'}`;
                 div.innerHTML = `<span class="status-badge">${correct ? 'CORRECT' : 'WRONG'}</span><p>Q${i+1}: ${q.q}</p><p>Ans: ${userAnswers[i] || 'None'} | Correct: ${q.a}</p>`;
                 list.appendChild(div);
             });
+
             document.getElementById('exam-view').style.display = 'none';
-            document.getElementById('result-view').style.display = 'block';
-            document.getElementById('res-name').innerText = "Student: " + localStorage.getItem('studentName');
-            document.getElementById('res-score').innerText = `${score} / ${currentQuestions.length}`;
-        }
-    </script>
-</body>
-</html>
+            document.ge

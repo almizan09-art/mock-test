@@ -101,7 +101,7 @@
         </div>
         <hr>
         <div class="question" id="q-text">Loading...</div>
-        <div class="options-container" id="options-box"></div>
+        <div id="options-box" class="options-container"></div>
         
         <div class="nav-btns">
             <button id="next-btn" onclick="nextQuestion()">Next Question</button>
@@ -244,7 +244,10 @@
             currentQIndex = 0;
             score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
-            timeLeft = subject === 'Biology' ? 1200 : 600; // Biology ke liye zyada time
+            
+            // Timer logic: Biology ke liye 20 mins, baaki ke liye 10 mins
+            timeLeft = (subject === 'Biology') ? 1200 : 600; 
+            
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
             startTimer();
@@ -257,7 +260,10 @@
                 let min = Math.floor(timeLeft / 60);
                 let sec = timeLeft % 60;
                 document.getElementById('timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-                if (timeLeft <= 0) { submitExam(); }
+                if (timeLeft <= 0) { 
+                    clearInterval(timerInterval);
+                    submitExam(); 
+                }
                 timeLeft--;
             }, 1000);
         }
@@ -268,6 +274,7 @@
             document.getElementById('q-text').innerText = currentQ.q;
             const optionsBox = document.getElementById('options-box');
             optionsBox.innerHTML = '';
+            
             currentQ.opts.forEach((opt, index) => {
                 const char = String.fromCharCode(65 + index);
                 const div = document.createElement('div');
@@ -275,6 +282,3 @@
                 div.innerText = `${char}) ${opt}`;
                 div.onclick = () => selectOption(div, char);
                 optionsBox.appendChild(div);
-            });
-            document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
-            document.getElementById('

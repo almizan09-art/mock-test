@@ -12,38 +12,47 @@ body{
 
 /* HEADER */
 .header{
-  background:#1e293b;
+  background:#0f172a;
   color:white;
-  padding:10px;
+  padding:15px;
   display:flex;
   justify-content:space-between;
+  font-size:18px;
 }
 
 /* MAIN */
 .container{
   display:flex;
+  height:90vh;
 }
 
 /* LEFT */
 .left{
   width:70%;
-  padding:20px;
+  padding:30px;
 }
 
-/* RIGHT */
-.right{
-  width:30%;
-  background:#e2e8f0;
-  padding:15px;
-}
-
-.option{
+/* QUESTION CARD */
+.card{
   background:white;
-  padding:10px;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+/* OPTIONS */
+.option{
+  background:#f8fafc;
+  padding:12px;
   margin:10px 0;
-  border-radius:5px;
+  border-radius:8px;
   cursor:pointer;
-  border:1px solid gray;
+  border:1px solid #ccc;
+  transition:0.3s;
+}
+
+.option:hover{
+  background:#e2e8f0;
 }
 
 .selected{
@@ -51,47 +60,76 @@ body{
   color:white;
 }
 
+/* BUTTONS */
+button{
+  padding:10px 20px;
+  margin:10px 5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  background:#2563eb;
+  color:white;
+}
+
+button:hover{
+  background:#1d4ed8;
+}
+
+/* RIGHT PANEL */
+.right{
+  width:30%;
+  background:#e2e8f0;
+  padding:20px;
+}
+
+/* PALETTE */
 .palette{
   display:flex;
   flex-wrap:wrap;
 }
 
 .palette div{
-  width:35px;
-  height:35px;
+  width:40px;
+  height:40px;
   margin:5px;
-  background:gray;
+  background:#64748b;
   text-align:center;
-  line-height:35px;
+  line-height:40px;
   cursor:pointer;
   color:white;
+  border-radius:5px;
 }
 
 .answered{
-  background:green;
+  background:#22c55e;
 }
 
-button{
+/* LOGIN */
+.center{
+  text-align:center;
+  margin-top:100px;
+}
+
+input{
   padding:10px;
-  margin:5px;
+  width:200px;
 }
 
 .hidden{display:none;}
-
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="login" style="text-align:center;margin-top:100px;">
+<div id="login" class="center">
 <h2>Start Mock Test</h2>
 <input id="name" placeholder="Enter Name"><br><br>
-<button onclick="login()">Start</button>
+<button onclick="login()">Start Test</button>
 </div>
 
 <!-- SUBJECT -->
-<div id="subject" class="hidden" style="text-align:center;margin-top:50px;">
+<div id="subject" class="center hidden">
 <h2>Select Subject</h2>
 <button onclick="start('phy')">Physics</button>
 <button onclick="start('chem')">Chemistry</button>
@@ -109,12 +147,16 @@ button{
 <div class="container">
 
 <div class="left">
+<div class="card">
 <h3 id="q"></h3>
 <div id="options"></div>
 
+<div style="text-align:center;">
 <button onclick="prev()">Prev</button>
 <button onclick="next()">Next</button>
 <button onclick="submit()">Submit</button>
+</div>
+</div>
 </div>
 
 <div class="right">
@@ -135,7 +177,6 @@ let answers=[];
 let questions=[];
 let time=600;
 
-/* LOGIN */
 function login(){
 user=document.getElementById("name").value;
 if(user==""){alert("Enter name");return;}
@@ -143,31 +184,19 @@ document.getElementById("login").classList.add("hidden");
 document.getElementById("subject").classList.remove("hidden");
 }
 
-/* QUESTIONS */
 const data={
-
 phy:[
-{q:"Relation between electric field and potential?",o:["E=dV/dr","E=-dV/dr","V=dE/dr","V=-dE/dr"],a:1},
-{q:"Capacitance does not depend on?",o:["Shape","Size","Medium","Charge"],a:3},
 {q:"SI unit of resistance?",o:["Ampere","Volt","Ohm","Watt"],a:2},
-{q:"Loop rule based on?",o:["Charge","Momentum","Energy","Mass"],a:2}
+{q:"Speed of light max in?",o:["Glass","Water","Vacuum","Air"],a:2}
 ],
-
 chem:[
-{q:"Unit of molarity?",o:["Mol/L","Mol/kg","g/L","None"],a:0},
-{q:"Total Bravais lattices?",o:["7","14","12","9"],a:1},
-{q:"Fuel cell uses?",o:["N2","O2","H2","CO2"],a:2}
+{q:"Unit of molarity?",o:["Mol/L","Mol/kg","g/L","None"],a:0}
 ],
-
 bio:[
-{q:"Double fertilization occurs in?",o:["Algae","Bryophytes","Angiosperms","Gymnosperms"],a:2},
-{q:"Fusion of gametes is called?",o:["Pollination","Syngamy","Parthenogenesis","Triple"],a:1},
-{q:"Total codons?",o:["16","32","64","20"],a:2}
+{q:"Double fertilization occurs in?",o:["Algae","Bryophytes","Angiosperms","Gymnosperms"],a:2}
 ]
-
 };
 
-/* START */
 function start(sub){
 questions=data[sub];
 document.getElementById("subject").classList.add("hidden");
@@ -177,7 +206,6 @@ createPalette();
 loadQ();
 }
 
-/* LOAD QUESTION */
 function loadQ(){
 let q=questions[qIndex];
 document.getElementById("q").innerText=(qIndex+1)+". "+q.q;
@@ -191,17 +219,14 @@ document.getElementById("options").innerHTML=html;
 updatePalette();
 }
 
-/* SELECT */
 function select(i){
 answers[qIndex]=i;
 loadQ();
 }
 
-/* NAV */
 function next(){ if(qIndex<questions.length-1){qIndex++;loadQ();}}
 function prev(){ if(qIndex>0){qIndex--;loadQ();}}
 
-/* PALETTE */
 function createPalette(){
 let html="";
 questions.forEach((_,i)=>{
@@ -221,7 +246,6 @@ box.classList.add("answered");
 
 function jump(i){qIndex=i;loadQ();}
 
-/* SUBMIT */
 function submit(){
 let score=0;
 questions.forEach((q,i)=>{
@@ -232,7 +256,6 @@ document.getElementById("result").innerText=
 user+" Score: "+score+"/"+questions.length;
 }
 
-/* TIMER */
 setInterval(()=>{
 time--;
 document.getElementById("timer").innerText="Time: "+time;

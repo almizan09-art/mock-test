@@ -17,19 +17,19 @@
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; margin: 0; color: var(--text);
+            min-height: 100vh; margin: 0; padding: 20px; color: var(--text);
         }
 
         .card {
             background: white; padding: 2.5rem; border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            width: 90%; max-width: 600px;
+            width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto;
         }
 
         h2 { color: var(--primary); text-align: center; margin-top: 0; }
 
         input[type="text"] {
-            width: 100%; padding: 15px; margin: 20px 0;
+            width: 100%; padding: 15px; margin: 20px 0; box-sizing: border-box;
             border: 2px solid #e2e8f0; border-radius: 10px; outline: none;
         }
 
@@ -57,8 +57,25 @@
         .option-item.selected { background: #d1fae5; border-color: #10b981; }
 
         .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+        
+        /* Result & Review Styles */
         .result-box { text-align: center; }
         .score-text { font-size: 2.5rem; color: var(--accent); font-weight: bold; margin: 10px 0; }
+        
+        .review-section { margin-top: 30px; text-align: left; border-top: 2px solid #eee; padding-top: 20px; }
+        .review-item { 
+            padding: 15px; border-radius: 10px; margin-bottom: 15px; 
+            border-left: 5px solid #ccc; background: #f9fafb;
+        }
+        .review-item.correct { border-left-color: var(--accent); background: #f0fdf4; }
+        .review-item.wrong { border-left-color: var(--danger); background: #fef2f2; }
+        
+        .status-badge { 
+            display: inline-block; padding: 2px 8px; border-radius: 4px; 
+            font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;
+        }
+        .correct .status-badge { background: var(--accent); color: white; }
+        .wrong .status-badge { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
@@ -98,9 +115,15 @@
             <h2>Exam Completed!</h2>
             <p id="res-name" style="font-size: 1.2rem; font-weight: 500;"></p>
             <p id="res-subject" style="color: var(--primary); font-weight: bold;"></p>
+            <p id="res-percent" style="font-size: 1.1rem; margin-top: 10px;"></p>
             <div class="score-text" id="res-score">0 / 20</div>
-            <p id="res-percent" style="font-weight: bold;"></p>
-            <button onclick="location.reload()" style="margin-top:20px;">Take Another Test</button>
+            
+            <button onclick="location.reload()" style="margin-top:20px;">Restart Portal</button>
+
+            <div class="review-section">
+                <h3>Answer Review</h3>
+                <div id="review-list"></div>
+            </div>
         </div>
     </div>
 
@@ -113,6 +136,7 @@
         let currentSubject = "";
         let currentQuestions = [];
 
+        // Questions Data remains the same
         const questionsData = {
             'Physics': [
                 { q: "What is the correct relation between electric field intensity (E) and potential (V)?", a: "B", opts: ["E = dV/dr", "E = -dV/dr", "V = dE/dr", "V = -dE/dr"] },
@@ -159,7 +183,7 @@
                 { q: "Fog is which type of colloidal system?", a: "B", opts: ["Gas in liquid", "Liquid in gas", "Solid in gas", "Liquid in liquid"] }
             ],
             'Biology': [
-                { q: "\"Double fertilization\" is a characteristic feature of:", a: "C", opts: ["Algae", "Bryophytes", "Angiosperms", "Gymnosperms"] },
+                { q: "Double fertilization is a characteristic feature of:", a: "C", opts: ["Algae", "Bryophytes", "Angiosperms", "Gymnosperms"] },
                 { q: "The fusion of male gamete and egg cell is called:", a: "B", opts: ["Pollination", "Syngamy", "Parthenogenesis", "Triple fusion"] },
                 { q: "What is the function of Sertoli cells in the testis?", a: "B", opts: ["Hormone production", "Nourishing the sperm", "Producing sperm", "Secreting enzymes"] },
                 { q: "What is the main function of Copper-T (CuT)?", a: "B", opts: ["Prevent ovulation", "Prevent fertilization", "Form zygote", "Cause mutation"] },
@@ -172,11 +196,11 @@
                 { q: "Elephantiasis (filariasis) is caused by:", a: "A", opts: ["Wuchereria bancrofti", "Ascaris", "Entamoeba", "Plasmodium"] },
                 { q: "What type of genetic material is present in HIV?", a: "C", opts: ["Double-stranded DNA", "Single-stranded DNA", "Single-stranded RNA", "Double-stranded RNA"] },
                 { q: "Who discovered penicillin?", a: "B", opts: ["Louis Pasteur", "Alexander Fleming", "Robert Koch", "Edward Jenner"] },
-                { q: "Which are called \"molecular scissors\"?", a: "C", opts: ["Ligase", "DNA polymerase", "Restriction enzymes", "Helicase"] },
-                { q: "In BT-cotton, what does \"BT\" stand for?", a: "B", opts: ["Biotechnology", "Bacillus thuringiensis", "Bio-toxin", "Botanical technique"] },
+                { q: "Which are called molecular scissors?", a: "C", opts: ["Ligase", "DNA polymerase", "Restriction enzymes", "Helicase"] },
+                { q: "In BT-cotton, what does BT stand for?", a: "B", opts: ["Biotechnology", "Bacillus thuringiensis", "Bio-toxin", "Botanical technique"] },
                 { q: "PCR (Polymerase Chain Reaction) is used for:", a: "B", opts: ["Protein synthesis", "DNA amplification", "Amino acid separation", "Cell division"] },
                 { q: "The interaction between two different species where both benefit is called:", a: "C", opts: ["Parasitism", "Commensalism", "Mutualism", "Competition"] },
-                { q: "The \"Pyramid of Energy\" is always:", a: "B", opts: ["Inverted", "Upright", "Spindle-shaped", "Irregular"] },
+                { q: "The Pyramid of Energy is always:", a: "B", opts: ["Inverted", "Upright", "Spindle-shaped", "Irregular"] },
                 { q: "Kanha National Park is famous for:", a: "B", opts: ["Lion", "Tiger", "Rhinoceros", "Elephant"] },
                 { q: "The ozone layer is found in the:", a: "B", opts: ["Troposphere", "Stratosphere", "Mesosphere", "Ionosphere"] }
             ]
@@ -198,10 +222,8 @@
             score = 0;
             userAnswers = Array(currentQuestions.length).fill(null);
             timeLeft = 600;
-
             document.getElementById('dashboard-view').style.display = 'none';
             document.getElementById('exam-view').style.display = 'block';
-            
             startTimer();
             displayQuestion();
         }
@@ -221,27 +243,18 @@
             const currentQ = currentQuestions[currentQIndex];
             document.getElementById('q-count').innerText = `Question ${currentQIndex + 1}/${currentQuestions.length}`;
             document.getElementById('q-text').innerText = currentQ.q;
-            
             const optionsBox = document.getElementById('options-box');
             optionsBox.innerHTML = '';
-            
             currentQ.opts.forEach((opt, index) => {
                 const char = String.fromCharCode(65 + index);
                 const div = document.createElement('div');
-                div.className = 'option-item';
-                if(userAnswers[currentQIndex] === char) div.classList.add('selected');
+                div.className = 'option-item' + (userAnswers[currentQIndex] === char ? ' selected' : '');
                 div.innerText = `${char}) ${opt}`;
                 div.onclick = () => selectOption(div, char);
                 optionsBox.appendChild(div);
             });
-
-            if(currentQIndex === currentQuestions.length - 1) {
-                document.getElementById('next-btn').style.display = 'none';
-                document.getElementById('submit-btn').style.display = 'block';
-            } else {
-                document.getElementById('next-btn').style.display = 'block';
-                document.getElementById('submit-btn').style.display = 'none';
-            }
+            document.getElementById('next-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'none' : 'block';
+            document.getElementById('submit-btn').style.display = (currentQIndex === currentQuestions.length - 1) ? 'block' : 'none';
         }
 
         function selectOption(el, char) {
@@ -257,21 +270,40 @@
         }
 
         function submitExam() {
-            if(timeLeft > 0 && !userAnswers[currentQIndex]) return alert("Please select answer for the last question!");
+            if(timeLeft > 0 && !userAnswers[currentQIndex]) return alert("Please select answer!");
             clearInterval(timerInterval);
             
             score = 0;
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
             currentQuestions.forEach((q, i) => {
-                if(userAnswers[i] === q.a) score++;
+                const isCorrect = (userAnswers[i] === q.a);
+                if(isCorrect) score++;
+
+                // Create Review Item
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = `review-item ${isCorrect ? 'correct' : 'wrong'}`;
+                
+                // Get full text of chosen option
+                const userChoiceIndex = userAnswers[i] ? userAnswers[i].charCodeAt(0) - 65 : -1;
+                const correctChoiceIndex = q.a.charCodeAt(0) - 65;
+
+                reviewDiv.innerHTML = `
+                    <span class="status-badge">${isCorrect ? 'CORRECT' : 'WRONG'}</span>
+                    <p style="margin:5px 0"><strong>Q${i+1}:</strong> ${q.q}</p>
+                    <p style="margin:2px 0; color: ${isCorrect ? 'green' : 'red'}">Your Answer: ${userAnswers[i] || 'Not Attempted'} - ${userChoiceIndex >= 0 ? q.opts[userChoiceIndex] : ''}</p>
+                    ${!isCorrect ? `<p style="margin:2px 0; color: green">Correct Answer: ${q.a} - ${q.opts[correctChoiceIndex]}</p>` : ''}
+                `;
+                reviewList.appendChild(reviewDiv);
             });
 
             document.getElementById('exam-view').style.display = 'none';
             document.getElementById('result-view').style.display = 'block';
-            
             document.getElementById('res-name').innerText = "Student: " + localStorage.getItem('studentName');
             document.getElementById('res-subject').innerText = "Subject: " + currentSubject;
+            document.getElementById('res-percent').innerText = `Success Rate: ${(score/currentQuestions.length)*100}%`;
             document.getElementById('res-score').innerText = `${score} / ${currentQuestions.length}`;
-            document.getElementById('res-percent').innerText = `Percentage: ${(score/currentQuestions.length)*100}%`;
         }
     </script>
 </body>

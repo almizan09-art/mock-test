@@ -3,126 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaChat - Live Application</title>
-    
+    <title>InstaChat - Friends</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, setDoc, doc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 Aapka Firebase Connection Config (Maine aapki photo se copy kiya hai)
         const firebaseConfig = {
             apiKey: "AIzaSyCVo-BZ88zoNxCjp-GfwTI9ABe14LNGnUA",
             authDomain: "online-chat-application-80592.firebaseapp.com",
             projectId: "online-chat-application-80592",
             storageBucket: "online-chat-application-80592.appspot.com",
-            messagingSenderId: "333166164284",
-            appId: "1:333166164284:web:e398869c9b74989679f2d1"
+            messagingSenderId: "468130262659",
+            appId: "1:468130262659:web:70208a13964e79fdbbf5b6"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- FUNCTIONS ---
+        let currentUser = "";
+        let chatWith = "";
 
-        // 1. Login Function
-        window.loginUser = function() {
-            const user = document.getElementById('username').value;
-            if (user.length < 3) return alert("Username kam se kam 3 letters ka hona chahiye!");
+        // 1. Login & Register User in Database
+        window.loginUser = async function() {
+            const user = document.getElementById('username').value.trim();
+            if (user.length < 3) return alert("User ID choti hai!");
             
+            currentUser = user;
             localStorage.setItem('chatUser', user);
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'grid';
-            loadMessages();
-        }
-
-        // 2. Send Message to Firebase
-        window.sendMsg = async function() {
-            const text = document.getElementById('msg-input').value;
-            const sender = localStorage.getItem('chatUser');
             
-            if (text.trim() === "") return;
+            // Save user to "users" collection
+            await setDoc(doc(db, "users", user), { username: user, online: true });
 
-            try {
-                await addDoc(collection(db, "messages"), {
-                    text: text,
-                    user: sender,
-                    timestamp: serverTimestamp()
-                });
-                document.getElementById('msg-input').value = ""; // Clear input
-            } catch (e) {
-                alert("Error! Kya aapne Firestore Rules 'true' kiye hain? " + e);
-            }
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('friend-list-screen').style.display = 'block';
+            loadUsers();
         }
 
-        // 3. Load Messages in Real-time
-        function loadMessages() {
-            const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
-            onSnapshot(q, (snapshot) => {
-                const chatBox = document.getElementById('chat-msgs');
-                chatBox.innerHTML = ""; // Clear box
+        // 2. Load all registered users
+        function loadUsers() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                const list = document.getElementById('users-list');
+                list.innerHTML = "";
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    const isMe = data.user === localStorage.getItem('chatUser');
-                    
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = `msg ${isMe ? 'sent' : 'received'}`;
-                    msgDiv.innerHTML = `<small style="font-size:10px; opacity:0.7;">${data.user}</small><br>${data.text}`;
-                    chatBox.appendChild(msgDiv);
+                    if (data.username !== currentUser) {
+                        const div = document.createElement('div');
+                        div.className = 'user-card';
+                        div.innerHTML = `<span>●</span> ${data.username} <button onclick="startChat('${data.username}')">Message</button>`;
+                        list.appendChild(div);
+                    }
                 });
-                chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll to bottom
             });
         }
 
-        // Enter key se send karne ke liye
-        window.handleKeyPress = function(e) {
-            if (e.key === 'Enter') sendMsg();
+        // 3. Switch to Chat Screen
+        window.startChat = function(friendName) {
+            chatWith = friendName;
+            document.getElementById('friend-list-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'grid';
+            document.getElementById('chat-header').innerText = "Chat with " + friendName;
+            loadMessages();
+        }
+
+        // 4. Send Private Message
+        window.sendMsg = async function() {
+            const text = document.getElementById('msg-input').value;
+            if (text.trim() === "") return;
+
+            // Chat ID unique banate hain (e.g., "Aman_Rahul")
+            const chatId = [currentUser, chatWith].sort().join("_");
+
+            await addDoc(collection(db, "chats", chatId, "messages"), {
+                text: text,
+                sender: currentUser,
+                timestamp: serverTimestamp()
+            });
+            document.getElementById('msg-input').value = "";
+        }
+
+        // 5. Load Messages for specific friend
+        function loadMessages() {
+            const chatId = [currentUser, chatWith].sort().join("_");
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
+            
+            onSnapshot(q, (snapshot) => {
+                const chatBox = document.getElementById('chat-msgs');
+                chatBox.innerHTML = "";
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isMe = data.sender === currentUser;
+                    chatBox.innerHTML += `<div class="msg ${isMe ? 'sent' : 'received'}">${data.text}</div>`;
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        window.goBack = function() {
+            document.getElementById('chat-screen').style.display = 'none';
+            document.getElementById('friend-list-screen').style.display = 'block';
         }
     </script>
-
     <style>
-        /* CSS Styling - Instagram Theme */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background: #fafafa; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
+        body { background: #fafafa; display: flex; justify-content: center; height: 100vh; padding-top: 20px; }
         
-        /* Auth Screen */
-        #auth-screen { text-align: center; background: white; border: 1px solid #dbdbdb; padding: 40px; width: 350px; border-radius: 3px; }
-        #auth-screen h2 { margin-bottom: 20px; font-weight: 300; font-size: 30px; }
-        #auth-screen input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; }
-        #auth-screen button { width: 100%; padding: 10px; background: #0095f6; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        /* Screens */
+        .container { width: 380px; height: 600px; background: white; border: 1px solid #dbdbdb; border-radius: 8px; overflow: hidden; position: relative; }
+        #friend-list-screen, #chat-screen { display: none; height: 100%; }
 
-        /* Main App Area */
-        #main-app { display: none; width: 100%; max-width: 450px; height: 90vh; background: white; border: 1px solid #dbdbdb; grid-template-rows: 60px 1fr 70px; border-radius: 8px; overflow: hidden; }
-        .header { display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #dbdbdb; font-weight: bold; font-size: 18px; }
-        .messages { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #fff; }
-        
-        /* Message Bubbles */
-        .msg { padding: 10px 15px; border-radius: 20px; max-width: 75%; font-size: 14px; line-height: 1.4; position: relative; }
-        .sent { align-self: flex-end; background: #0095f6; color: white; border-bottom-right-radius: 2px; }
-        .received { align-self: flex-start; background: #efefef; color: black; border-bottom-left-radius: 2px; }
+        /* Login */
+        #auth-screen { padding: 40px; text-align: center; display: block; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #dbdbdb; border-radius: 4px; }
+        button.primary { width: 100%; padding: 10px; background: #0095f6; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
-        /* Input Bar */
-        .input-area { display: flex; align-items: center; padding: 10px 20px; border-top: 1px solid #dbdbdb; gap: 10px; }
-        .input-area input { flex: 1; border: 1px solid #dbdbdb; padding: 10px 15px; border-radius: 25px; outline: none; }
-        .input-area button { color: #0095f6; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 14px; }
+        /* Friend List */
+        .user-card { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #efefef; }
+        .user-card span { color: #00d26a; margin-right: 5px; }
+        .user-card button { background: #0095f6; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+        /* Chat */
+        #chat-screen { grid-template-rows: 50px 1fr 60px; }
+        .header { padding: 15px; border-bottom: 1px solid #dbdbdb; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .messages { padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fdfdfd; }
+        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; }
+        .sent { align-self: flex-end; background: #0095f6; color: white; }
+        .received { align-self: flex-start; background: #efefef; }
+        .input-area { display: flex; padding: 10px; border-top: 1px solid #dbdbdb; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen">
-        <h2>InstaChat</h2>
-        <input type="text" id="username" placeholder="Phone number, username, or email">
-        <button onclick="loginUser()">Log In</button>
-        <p style="margin-top: 20px; font-size: 12px; color: #8e8e8e;">This is a global chat room.</p>
-    </div>
+    <div class="container">
+        <div id="auth-screen">
+            <h2>InstaChat</h2><br>
+            <input type="text" id="username" placeholder="Choose your User ID">
+            <button class="primary" onclick="loginUser()">Join</button>
+        </div>
 
-    <div id="main-app">
-        <div class="header">Chat Room</div>
-        <div class="messages" id="chat-msgs">
+        <div id="friend-list-screen">
+            <div style="padding: 15px; border-bottom: 1px solid #dbdbdb; font-weight: bold;">Suggested Friends</div>
+            <div id="users-list"></div>
+        </div>
+
+        <div id="chat-screen">
+            <div class="header">
+                <button onclick="goBack()" style="background:none; border:none; color:#0095f6; cursor:pointer;">←</button>
+                <span id="chat-header">User</span>
             </div>
-        <div class="input-area">
-            <input type="text" id="msg-input" placeholder="Message..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMsg()">Send</button>
+            <div class="messages" id="chat-msgs"></div>
+            <div class="input-area">
+                <input type="text" id="msg-input" placeholder="Message...">
+                <button onclick="sendMsg()" style="background:none; border:none; color:#0095f6; font-weight:bold; cursor:pointer; margin-left:5px;">Send</button>
+            </div>
         </div>
     </div>
 

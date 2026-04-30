@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeetZone | Premium Chat</title>
+    <title>MeetZone | Premium</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -20,20 +20,22 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let currentUser = localStorage.getItem('MeetZoneUser') || "";
+        let unsubscribeMsgs = null; // Purani chat listener hatane ke liye
 
+        // AUTH SYSTEM
         window.handleAuth = async function() {
-            const user = document.getElementById('username').value.trim();
+            const user = document.getElementById('username').value.trim().toLowerCase();
             const pass = document.getElementById('password').value.trim();
-            if (user.length < 3 || pass.length < 4) return alert("Username (min 3) & Password (min 4)!");
+            if (user.length < 3) return alert("Username chhota hai!");
 
             const userRef = doc(db, "users", user);
             const userSnap = await getDoc(userRef);
 
             if (userSnap.exists()) {
                 if (userSnap.data().password === pass) { loginSuccess(user); }
-                else { alert("Incorrect Password!"); }
+                else { alert("Galat Password!"); }
             } else {
-                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "Hey! I'm using MeetZone", joined: serverTimestamp() });
+                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "MeetZone User", joined: serverTimestamp() });
                 loginSuccess(user);
             }
         }
@@ -43,20 +45,17 @@
             location.reload();
         }
 
+        // NAVIGATION
         window.showTab = (t) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(t).style.display = 'flex';
             if(t === 'search-tab') loadUsers();
             if(t === 'friend-tab') loadFriends();
+            // Chat se bahar nikalte waqt listener band karein
+            if(t !== 'chat-box' && unsubscribeMsgs) { unsubscribeMsgs(); unsubscribeMsgs = null; }
         }
 
-        window.addFriend = async function(friendId) {
-            const myRef = doc(db, "users", currentUser);
-            await updateDoc(myRef, { friends: arrayUnion(friendId) });
-            alert(friendId + " added to friends!");
-            showTab('friend-tab');
-        }
-
+        // LOAD USERS (SEARCH)
         function loadUsers() {
             onSnapshot(collection(db, "users"), (snap) => {
                 const list = document.getElementById('search-list');
@@ -72,146 +71,164 @@
             });
         }
 
+        window.addFriend = async function(friendId) {
+            await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(friendId) });
+            await updateDoc(doc(db, "users", friendId), { friends: arrayUnion(currentUser) }); // Mutual follow
+            alert("Ab aap baat kar sakte hain!");
+            showTab('friend-tab');
+        }
+
+        // LOAD FRIENDS (INBOX)
         function loadFriends() {
-            const myRef = doc(db, "users", currentUser);
-            onSnapshot(myRef, async (snap) => {
+            onSnapshot(doc(db, "users", currentUser), (snap) => {
                 const list = document.getElementById('friend-list');
                 list.innerHTML = "";
-                const friends = snap.data().friends || [];
+                const friends = snap.data()?.friends || [];
                 friends.forEach(f => {
                     list.innerHTML += `<div class="card" onclick="openChat('${f}')">
                         <div style="display:flex; align-items:center; gap:10px;">
-                            <div style="width:40px; height:40px; background:#ddd; border-radius:50%; display:grid; place-items:center;">👤</div>
-                            <span><b>${f}</b></span>
+                            <div class="avatar">👤</div>
+                            <b>${f}</b>
                         </div>
-                        <span style="color:#3498db; font-size:12px;">Message</span>
+                        <small style="color:var(--insta-blue)">Message</small>
                     </div>`;
                 });
             });
+        }
+
+        // CHAT ENGINE
+        window.openChat = (f) => {
+            activeChat = f;
+            document.getElementById('chat-with-name').innerText = f;
+            showTab('chat-box');
+            loadMsgs();
         }
 
         let activeChat = "";
-        window.openChat = (f) => { 
-            activeChat = f; 
-            showTab('chat-box'); 
-            document.getElementById('chat-with').innerText = f; 
-            loadMsgs(); 
+        function loadMsgs() {
+            if(unsubscribeMsgs) unsubscribeMsgs(); // Purana listener clear karein
+            
+            const chatId = [currentUser, activeChat].sort().join("_");
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
+            
+            unsubscribeMsgs = onSnapshot(q, (snap) => {
+                const box = document.getElementById('msgs');
+                box.innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    const isMe = data.sender === currentUser;
+                    box.innerHTML += `
+                        <div class="msg-wrapper ${isMe ? 'me-wrap' : 'you-wrap'}">
+                            <div class="msg-bubble ${isMe ? 'me' : 'you'}">${data.text}</div>
+                        </div>`;
+                });
+                box.scrollTop = box.scrollHeight; // Auto-scroll to bottom
+            });
         }
 
         window.sendMsg = async () => {
-            const txt = document.getElementById('m-input').value;
-            if(!txt) return;
-            const chatId = [currentUser, activeChat].sort().join("_");
-            await addDoc(collection(db, "chats", chatId, "messages"), {
-                text: txt, sender: currentUser, time: serverTimestamp()
-            });
-            document.getElementById('m-input').value = "";
-        }
+            const input = document.getElementById('m-input');
+            const txt = input.value.trim();
+            if(!txt || !activeChat) return;
 
-        function loadMsgs() {
             const chatId = [currentUser, activeChat].sort().join("_");
-            const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
-            onSnapshot(q, (snap) => {
-                const box = document.getElementById('msgs'); box.innerHTML = "";
-                snap.forEach(d => {
-                    const isMe = d.data().sender === currentUser;
-                    box.innerHTML += `<div class="msg-wrapper ${isMe?'me-wrap':'you-wrap'}">
-                        <div class="msg-bubble ${isMe?'me':'you'}">${d.data().text}</div>
-                    </div>`;
-                });
-                box.scrollTop = box.scrollHeight;
+            input.value = ""; // Turant clear karein for better UX
+            
+            await addDoc(collection(db, "chats", chatId, "messages"), {
+                text: txt,
+                sender: currentUser,
+                time: serverTimestamp()
             });
         }
 
         window.logout = () => {
-            if(confirm("Logout karna chahte hain?")) {
-                localStorage.clear();
-                location.reload();
-            }
+            if(confirm("Logout karein?")) { localStorage.clear(); location.reload(); }
         }
 
-        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; showTab('home-tab'); } }
+        window.onload = () => { 
+            if(currentUser) { 
+                document.getElementById('auth').style.display='none'; 
+                document.getElementById('app').style.display='block'; 
+                showTab('home-tab'); 
+            } 
+        }
     </script>
     <style>
-        :root { --insta-blue: #0095f6; --bg: #ffffff; --text: #262626; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--bg); color: var(--text); }
+        :root { --insta-blue: #0095f6; --bg: #ffffff; --light-grey: #efefef; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
         
-        /* Auth Screen */
-        #auth { max-width: 350px; margin: 50px auto; padding: 20px; border: 1px solid #dbdbdb; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; }
+        /* Auth */
+        #auth { max-width: 350px; margin: 80px auto; padding: 20px; text-align: center; border: 1px solid #dbdbdb; }
+        input { width: 100%; padding: 12px; margin: 8px 0; background: #fafafa; border: 1px solid #dbdbdb; border-radius: 4px; }
         
-        /* Navigation */
-        .header { position: sticky; top:0; background: white; padding: 15px; border-bottom: 1px solid #dbdbdb; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; background: white; padding: 12px; border-top: 1px solid #dbdbdb; font-size: 24px; }
-        .nav span { cursor: pointer; }
+        /* Header & Nav */
+        .header { padding: 15px; border-bottom: 1px solid #dbdbdb; display: flex; align-items: center; background: white; sticky: top; }
+        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 15px; background: white; border-top: 1px solid #dbdbdb; font-size: 22px; }
+        
+        /* Tab Styles */
+        .tab-content { display: none; flex-direction: column; padding: 15px; padding-bottom: 80px; min-height: 80vh; }
+        .card { display: flex; justify-content: space-between; align-items: center; padding: 12px; cursor: pointer; border-radius: 8px; }
+        .card:hover { background: #fafafa; }
+        .avatar { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: grid; place-items: center; }
+        button { background: var(--insta-blue); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        /* Tabs */
-        .tab-content { display: none; flex-direction: column; padding: 10px; margin-bottom: 60px; }
-        .card { display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
-        .card:active { background: #fafafa; }
-        button { background: var(--insta-blue); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-
-        /* Instagram Style Chat UI */
-        #msgs { height: calc(100vh - 180px); overflow-y: auto; display: flex; flex-direction: column; padding: 10px; }
-        .msg-wrapper { display: flex; width: 100%; margin-bottom: 4px; }
+        /* Instagram Chat Bubbles */
+        #msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 10px; height: 65vh; }
+        .msg-wrapper { display: flex; width: 100%; margin-bottom: 5px; }
         .me-wrap { justify-content: flex-end; }
         .you-wrap { justify-content: flex-start; }
         
-        .msg-bubble { max-width: 70%; padding: 8px 15px; font-size: 14.5px; line-height: 1.4; border-radius: 20px; }
+        .msg-bubble { max-width: 75%; padding: 10px 16px; border-radius: 20px; font-size: 15px; position: relative; }
         .me { background: var(--insta-blue); color: white; border-bottom-right-radius: 4px; }
-        .you { background: #efefef; color: var(--text); border-bottom-left-radius: 4px; }
+        .you { background: var(--light-grey); color: black; border-bottom-left-radius: 4px; }
 
-        .chat-input-area { position: fixed; bottom: 65px; left: 0; width: 100%; padding: 10px; background: white; display: flex; gap: 10px; align-items: center; border-top: 1px solid #efefef; }
-        .chat-input-area input { border-radius: 20px; padding: 10px 20px; border: 1px solid #dbdbdb; flex: 1; }
-        
-        #settings-tab { text-align: center; padding-top: 50px; }
+        .chat-input { position: fixed; bottom: 70px; width: 92%; left: 4%; display: flex; gap: 10px; background: white; padding: 10px; border: 1px solid #dbdbdb; border-radius: 30px; }
+        .chat-input input { border: none; margin: 0; padding: 5px; background: transparent; }
+        .chat-input span { color: var(--insta-blue); font-weight: bold; padding: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
+
     <div id="auth">
-        <h1 style="font-family: 'Brush Script MT', cursive; font-size: 40px; margin-bottom: 20px;">MeetZone</h1>
-        <input id="username" placeholder="Phone number, username, or email">
+        <h1 style="font-size: 35px; margin-bottom: 20px;">MeetZone</h1>
+        <input id="username" placeholder="Username">
         <input id="password" type="password" placeholder="Password">
-        <button onclick="handleAuth()" style="width:100%; margin-top: 10px;">Log In</button>
+        <button onclick="handleAuth()" style="width:100%">Log In</button>
     </div>
 
     <div id="app" style="display:none;">
         <div class="header">
-            <span style="font-family: 'Brush Script MT', cursive; font-size: 24px;">MeetZone</span>
-            <span id="chat-with" style="font-size: 16px; font-weight: 600;"></span>
+            <span style="font-weight: bold; font-size: 20px;">MeetZone</span>
+            <span id="chat-with-name" style="margin-left: 20px; color: var(--insta-blue);"></span>
         </div>
-        
+
         <div id="home-tab" class="tab-content">
-            <div style="text-align:center; margin-top:100px;">
-                <h2>Welcome to MeetZone</h2>
-                <p style="color:#8e8e8e">Follow friends to start chatting.</p>
-            </div>
+            <h2 style="margin-top: 50px; text-align: center;">Welcome back!</h2>
+            <p style="text-align: center; color: gray;">Search users to start chatting.</p>
         </div>
 
         <div id="search-tab" class="tab-content">
-            <h3 style="margin-bottom:15px">Suggested</h3>
+            <h3>Find People</h3><hr><br>
             <div id="search-list"></div>
         </div>
 
         <div id="friend-tab" class="tab-content">
-            <h3 style="margin-bottom:15px">Messages</h3>
+            <h3>Messages</h3><hr><br>
             <div id="friend-list"></div>
         </div>
 
         <div id="chat-box" class="tab-content">
             <div id="msgs"></div>
-            <div class="chat-input-area">
+            <div class="chat-input">
                 <input id="m-input" placeholder="Message...">
-                <span onclick="sendMsg()" style="color:var(--insta-blue); font-weight:600; cursor:pointer">Send</span>
+                <span onclick="sendMsg()">Send</span>
             </div>
         </div>
 
-        <div id="settings-tab" class="tab-content">
-            <div style="background:#fafafa; padding:20px; border-radius:10px;">
-                <p>Logged in as: <b><script>document.write(localStorage.getItem('MeetZoneUser'))</script></b></p>
-                <button onclick="logout()" style="background:#ed4956; margin-top:20px;">Log Out</button>
-            </div>
+        <div id="settings-tab" class="tab-content" style="text-align: center;">
+            <h3>Settings</h3><br>
+            <button onclick="logout()" style="background: #ff4757;">Log Out</button>
+            <p style="margin-top: 20px; font-size: 12px; color: gray;">MeetZone v2.0 - Authenticated</p>
         </div>
 
         <div class="nav">
@@ -221,5 +238,6 @@
             <span onclick="showTab('settings-tab')">⚙️</span>
         </div>
     </div>
+
 </body>
 </html>

@@ -3,147 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaChat - Clone</title>
+    <title>InstaChat - Live Application</title>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 🔥 Aapka Firebase Connection Config (Maine aapki photo se copy kiya hai)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVo-BZ88zoNxCjp-GfwTI9ABe14LNGnUA",
+            authDomain: "online-chat-application-80592.firebaseapp.com",
+            projectId: "online-chat-application-80592",
+            storageBucket: "online-chat-application-80592.appspot.com",
+            messagingSenderId: "333166164284",
+            appId: "1:333166164284:web:e398869c9b74989679f2d1"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- FUNCTIONS ---
+
+        // 1. Login Function
+        window.loginUser = function() {
+            const user = document.getElementById('username').value;
+            if (user.length < 3) return alert("Username kam se kam 3 letters ka hona chahiye!");
+            
+            localStorage.setItem('chatUser', user);
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'grid';
+            loadMessages();
+        }
+
+        // 2. Send Message to Firebase
+        window.sendMsg = async function() {
+            const text = document.getElementById('msg-input').value;
+            const sender = localStorage.getItem('chatUser');
+            
+            if (text.trim() === "") return;
+
+            try {
+                await addDoc(collection(db, "messages"), {
+                    text: text,
+                    user: sender,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('msg-input').value = ""; // Clear input
+            } catch (e) {
+                alert("Error! Kya aapne Firestore Rules 'true' kiye hain? " + e);
+            }
+        }
+
+        // 3. Load Messages in Real-time
+        function loadMessages() {
+            const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+            onSnapshot(q, (snapshot) => {
+                const chatBox = document.getElementById('chat-msgs');
+                chatBox.innerHTML = ""; // Clear box
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isMe = data.user === localStorage.getItem('chatUser');
+                    
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `msg ${isMe ? 'sent' : 'received'}`;
+                    msgDiv.innerHTML = `<small style="font-size:10px; opacity:0.7;">${data.user}</small><br>${data.text}`;
+                    chatBox.appendChild(msgDiv);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll to bottom
+            });
+        }
+
+        // Enter key se send karne ke liye
+        window.handleKeyPress = function(e) {
+            if (e.key === 'Enter') sendMsg();
+        }
+    </script>
+
     <style>
-        /* CSS Section */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #fafafa; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        /* CSS Styling - Instagram Theme */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #fafafa; display: flex; justify-content: center; align-items: center; height: 100vh; }
         
-        .chat-container {
-            width: 400px;
-            height: 600px;
-            background: white;
-            border: 1px solid #dbdbdb;
-            display: flex;
-            flex-direction: column;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+        /* Auth Screen */
+        #auth-screen { text-align: center; background: white; border: 1px solid #dbdbdb; padding: 40px; width: 350px; border-radius: 3px; }
+        #auth-screen h2 { margin-bottom: 20px; font-weight: 300; font-size: 30px; }
+        #auth-screen input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; }
+        #auth-screen button { width: 100%; padding: 10px; background: #0095f6; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
 
-        /* Header */
-        .header {
-            padding: 15px;
-            border-bottom: 1px solid #dbdbdb;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 35px; height: 35px; background: #ddd; border-radius: 50%; }
-        .status { font-size: 12px; color: green; }
+        /* Main App Area */
+        #main-app { display: none; width: 100%; max-width: 450px; height: 90vh; background: white; border: 1px solid #dbdbdb; grid-template-rows: 60px 1fr 70px; border-radius: 8px; overflow: hidden; }
+        .header { display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #dbdbdb; font-weight: bold; font-size: 18px; }
+        .messages { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #fff; }
+        
+        /* Message Bubbles */
+        .msg { padding: 10px 15px; border-radius: 20px; max-width: 75%; font-size: 14px; line-height: 1.4; position: relative; }
+        .sent { align-self: flex-end; background: #0095f6; color: white; border-bottom-right-radius: 2px; }
+        .received { align-self: flex-start; background: #efefef; color: black; border-bottom-left-radius: 2px; }
 
-        /* Messages Area */
-        .messages-box {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #fff;
-        }
-        .msg { max-width: 70%; padding: 8px 12px; border-radius: 18px; font-size: 14px; }
-        .sent { align-self: flex-end; background-color: #0095f6; color: white; }
-        .received { align-self: flex-start; background-color: #efefef; color: black; }
-
-        /* Input Area */
-        .input-area {
-            padding: 15px;
-            border-top: 1px solid #dbdbdb;
-            display: flex;
-            gap: 10px;
-        }
-        input[type="text"] {
-            flex: 1;
-            border: none;
-            outline: none;
-            padding: 8px;
-        }
-        .btn-group { display: flex; gap: 10px; align-items: center; }
-        button { 
-            background: none; border: none; color: #0095f6; 
-            font-weight: bold; cursor: pointer; 
-        }
-        #file-input { display: none; }
-        .file-label { cursor: pointer; font-size: 18px; }
+        /* Input Bar */
+        .input-area { display: flex; align-items: center; padding: 10px 20px; border-top: 1px solid #dbdbdb; gap: 10px; }
+        .input-area input { flex: 1; border: 1px solid #dbdbdb; padding: 10px 15px; border-radius: 25px; outline: none; }
+        .input-area button { color: #0095f6; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <div class="header">
-            <div class="user-info">
-                <div class="avatar"></div>
-                <div>
-                    <strong>Aman_Rawat</strong>
-                    <div class="status">Online</div>
-                </div>
-            </div>
-            <div class="btn-group">
-                <button onclick="startVideo()">📹</button>
-            </div>
-        </div>
+    <div id="auth-screen">
+        <h2>InstaChat</h2>
+        <input type="text" id="username" placeholder="Phone number, username, or email">
+        <button onclick="loginUser()">Log In</button>
+        <p style="margin-top: 20px; font-size: 12px; color: #8e8e8e;">This is a global chat room.</p>
+    </div>
 
-        <div class="messages-box" id="msgBox">
-            <div class="msg received">Hey! Kaise ho? 👋</div>
-            <div class="msg sent">Main theek hoon, tum batao?</div>
-        </div>
-
+    <div id="main-app">
+        <div class="header">Chat Room</div>
+        <div class="messages" id="chat-msgs">
+            </div>
         <div class="input-area">
-            <label for="file-input" class="file-label">📁</label>
-            <input type="file" id="file-input" onchange="sendFile(event)">
-            
-            <input type="text" id="msgInput" placeholder="Message...">
-            <button onclick="sendMessage()">Send</button>
+            <input type="text" id="msg-input" placeholder="Message..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMsg()">Send</button>
         </div>
     </div>
 
-    <script>
-        // JavaScript Section
-        const msgBox = document.getElementById('msgBox');
-        const msgInput = document.getElementById('msgInput');
-
-        // 1. Text Message Send karne ke liye
-        function sendMessage() {
-            const text = msgInput.value;
-            if (text.trim() !== "") {
-                createMessageElement(text, 'sent');
-                msgInput.value = "";
-                
-                // Auto Reply (Simulation)
-                setTimeout(() => {
-                    createMessageElement("Sahi hai! 👍", 'received');
-                }, 1000);
-            }
-        }
-
-        function createMessageElement(content, type) {
-            const div = document.createElement('div');
-            div.classList.add('msg', type);
-            div.innerText = content;
-            msgBox.appendChild(div);
-            msgBox.scrollTop = msgBox.scrollHeight; // Auto scroll down
-        }
-
-        // 2. File Send karne ka Logic (Frontend Only)
-        function sendFile(event) {
-            const file = event.target.files[0];
-            if (file) {
-                createMessageElement(`Sent File: ${file.name} 📄`, 'sent');
-            }
-        }
-
-        // 3. Video Call Alert
-        function startVideo() {
-            alert("Video Call Feature ke liye WebRTC server chahiye. Calling Aman...");
-        }
-
-        // Enter key se send karein
-        msgInput.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
-        });
-    </script>
 </body>
 </html>

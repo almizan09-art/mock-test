@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeetZone</title>
+    <title>MeetZone | WhatsApp Style</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Firebase Config (Images se liya gaya sahi config)
         const firebaseConfig = {
             apiKey: "AIzaSyCVo-BZ88zoNxCjp-GfwTI9ABe14LNGnUA",
             authDomain: "online-chat-application-80592.firebaseapp.com",
@@ -20,149 +21,187 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let currentUser = localStorage.getItem('MeetZoneUser') || "";
+        let activeChat = "";
 
-        // AUTHENTICATION
+        // Login Logic
         window.handleAuth = async function() {
             const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
-            if (user.length < 3 || pass.length < 4) return alert("Username (min 3) & Password (min 4)!");
+            if(!user || !pass) return alert("Pehle details bharo!");
 
             const userRef = doc(db, "users", user);
             const userSnap = await getDoc(userRef);
 
-            if (userSnap.exists()) {
-                if (userSnap.data().password === pass) { loginSuccess(user); }
+            if(userSnap.exists()) {
+                if(userSnap.data().password === pass) { loginOk(user); }
                 else { alert("Galat Password!"); }
             } else {
-                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "Hey! I'm using MeetZone", joined: serverTimestamp() });
-                loginSuccess(user);
+                await setDoc(userRef, { username: user, password: pass, friends: [] });
+                loginOk(user);
             }
         }
 
-        function loginSuccess(user) {
-            localStorage.setItem('MeetZoneUser', user);
-            location.reload();
-        }
+        function loginOk(u) { localStorage.setItem('MeetZoneUser', u); location.reload(); }
 
-        // TAB NAVIGATION
+        // Navigation Controls
         window.showTab = (t) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(t).style.display = 'block';
-            if(t === 'search-tab') loadUsers();
-            if(t === 'friend-tab') loadFriends();
         }
 
-        // FRIEND SYSTEM
-        window.addFriend = async function(friendId) {
-            const myRef = doc(db, "users", currentUser);
-            await updateDoc(myRef, { friends: arrayUnion(friendId) });
-            alert(friendId + " ab aapka friend hai!");
-            showTab('friend-tab');
+        // WhatsApp Style Chat
+        window.openChat = (friend) => {
+            activeChat = friend;
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
+            document.getElementById('chat-user-name').innerText = friend;
+            loadMessages();
         }
 
-        function loadUsers() {
-            onSnapshot(collection(db, "users"), (snap) => {
-                const list = document.getElementById('search-list');
-                list.innerHTML = "";
-                snap.forEach(d => {
-                    if(d.id !== currentUser) {
-                        list.innerHTML += `<div class="card">
-                            <span>👤 <b>${d.id}</b></span>
-                            <button onclick="addFriend('${d.id}')">Add Friend</button>
-                        </div>`;
-                    }
-                });
-            });
+        window.closeChat = () => {
+            document.getElementById('chat-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
         }
 
-        function loadFriends() {
-            const myRef = doc(db, "users", currentUser);
-            onSnapshot(myRef, async (snap) => {
-                const list = document.getElementById('friend-list');
-                list.innerHTML = "";
-                const friends = snap.data().friends || [];
-                for(let f of friends) {
-                    list.innerHTML += `<div class="card">
-                        <span onclick="viewProfile('${f}')">👤 ${f} (View Profile)</span>
-                        <button onclick="openChat('${f}')" style="background:#2ecc71">Chat</button>
-                    </div>`;
-                }
-            });
+        window.logout = () => {
+            if(confirm("Logout karna chahte hain?")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
-
-        window.viewProfile = async function(uid) {
-            const snap = await getDoc(doc(db, "users", uid));
-            const data = snap.data();
-            alert(`MeetZone Profile:\nName: ${data.username}\nBio: ${data.bio}`);
-        }
-
-        // CHAT & MEDIA
-        let activeChat = "";
-        window.openChat = (f) => { activeChat = f; showTab('chat-box'); document.getElementById('chat-with').innerText = f; loadMsgs(); }
 
         window.sendMsg = async () => {
-            const txt = document.getElementById('m-input').value;
-            const file = document.getElementById('f-input').files[0];
-            if(!txt && !file) return;
+            const input = document.getElementById('msg-input');
+            if(!input.value.trim()) return;
             const chatId = [currentUser, activeChat].sort().join("_");
             await addDoc(collection(db, "chats", chatId, "messages"), {
-                text: txt, sender: currentUser, time: serverTimestamp(), type: file ? "file" : "text"
+                text: input.value, sender: currentUser, time: serverTimestamp()
             });
-            document.getElementById('m-input').value = "";
-            if(file) alert("File feature: Firebase Billing (UPI) verify karein upload ke liye!");
+            input.value = "";
         }
 
-        function loadMsgs() {
+        function loadMessages() {
             const chatId = [currentUser, activeChat].sort().join("_");
             const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
             onSnapshot(q, (snap) => {
-                const box = document.getElementById('msgs'); box.innerHTML = "";
+                const box = document.getElementById('chat-box');
+                box.innerHTML = "";
                 snap.forEach(d => {
                     const isMe = d.data().sender === currentUser;
-                    box.innerHTML += `<div class="msg ${isMe?'me':'you'}">${d.data().text}</div>`;
+                    const time = d.data().time ? new Date(d.data().time.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    box.innerHTML += `
+                        <div class="msg-row ${isMe?'me':'you'}">
+                            <div class="bubble">
+                                ${d.data().text}
+                                <span class="time">${time}</span>
+                            </div>
+                        </div>`;
                 });
+                box.scrollTop = box.scrollHeight;
             });
         }
 
-        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; showTab('home-tab'); } }
+        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('main-app').style.display='block'; showTab('home-tab'); } }
     </script>
     <style>
-        :root { --p: #9b59b6; } * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
-        .card { display: flex; justify-content: space-between; padding: 15px; background: #fff; margin-bottom: 10px; border-radius: 10px; box-shadow: 0 2px 5px #ddd; align-items: center; }
-        button { background: var(--p); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        #app { background: #f0f2f5; min-height: 100vh; }
-        .nav { position: fixed; bottom:0; width: 100%; display: flex; justify-content: space-around; background: white; padding: 15px; border-top: 1px solid #ddd; }
-        .tab-content { padding: 15px; margin-bottom: 70px; }
-        .msg { padding: 10px; margin: 5px; border-radius: 10px; max-width: 80%; }
-        .me { align-self: flex-end; background: var(--p); color: white; margin-left: auto; }
-        .you { align-self: flex-start; background: white; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        :root { --wa-green: #075e54; --wa-teal: #128c7e; --wa-light: #dcf8c6; --wa-bg: #e5ddd5; }
+        
+        /* Login Screen */
+        #auth { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .btn-p { width: 100%; padding: 12px; background: var(--wa-green); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* Main App Header */
+        .header { background: var(--wa-green); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .tab-content { padding: 15px; padding-bottom: 80px; }
+
+        /* WhatsApp Chat Window */
+        #chat-screen { display: none; flex-direction: column; height: 100vh; background: var(--wa-bg); position: fixed; top: 0; width: 100%; z-index: 100; }
+        .chat-head { background: var(--wa-green); color: white; padding: 10px 15px; display: flex; align-items: center; gap: 12px; }
+        .chat-box { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        
+        /* Bubbles */
+        .msg-row { display: flex; width: 100%; }
+        .me { justify-content: flex-end; }
+        .you { justify-content: flex-start; }
+        .bubble { padding: 6px 12px; border-radius: 8px; max-width: 75%; position: relative; font-size: 15px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .me .bubble { background: var(--wa-light); border-top-right-radius: 0; }
+        .you .bubble { background: white; border-top-left-radius: 0; }
+        .time { font-size: 10px; color: #888; display: block; text-align: right; margin-top: 4px; }
+
+        /* Input Area */
+        .chat-input { background: #f0f0f0; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+        .chat-input input { flex: 1; border: none; border-radius: 25px; padding: 10px 15px; margin: 0; }
+        .send-btn { background: var(--wa-teal); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+
+        /* Bottom Navigation */
+        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #ddd; font-size: 22px; }
+        
+        /* Settings List */
+        .s-item { background: white; padding: 15px; margin-bottom: 8px; border-radius: 10px; display: flex; align-items: center; gap: 10px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
-    <div id="auth" style="padding:50px; text-align:center;">
-        <h1 style="color:var(--p)">MeetZone</h1>
-        <input id="username" placeholder="Username" style="width:100%; padding:10px; margin:10px 0;">
-        <input id="password" type="password" placeholder="Password" style="width:100%; padding:10px; margin:10px 0;">
-        <button onclick="handleAuth()" style="width:100%">Login / Register</button>
+
+    <div id="auth">
+        <h1 style="color:var(--wa-green); margin-bottom: 20px;">MeetZone</h1>
+        <input id="username" placeholder="Phone Number / Username">
+        <input id="password" type="password" placeholder="Password">
+        <button class="btn-p" onclick="handleAuth()">LOGIN / SIGNUP</button>
     </div>
-    <div id="app" style="display:none;">
-        <div style="background:white; padding:15px; font-weight:bold; color:var(--p); font-size:22px; border-bottom:1px solid #ddd;">MeetZone</div>
-        
-        <div id="home-tab" class="tab-content"><h3>Feed</h3><p>Welcome back! Search friends to start.</p></div>
-        <div id="search-tab" class="tab-content" style="display:none;"><h3>Find People</h3><div id="search-list"></div></div>
-        <div id="friend-tab" class="tab-content" style="display:none;"><h3>Your Friends</h3><div id="friend-list"></div></div>
-        <div id="chat-box" class="tab-content" style="display:none;">
-            <h4 id="chat-with">Chat</h4><hr><div id="msgs" style="height:300px; overflow-y:auto; display:flex; flex-direction:column;"></div>
-            <input id="m-input" placeholder="Message..."><input type="file" id="f-input" style="font-size:10px">
-            <button onclick="sendMsg()">Send</button>
+
+    <div id="main-app" style="display:none;">
+        <div class="header">
+            <span style="font-size: 20px; font-weight: bold;">MeetZone</span>
+            <div style="display: flex; gap: 20px;">🔍 ⋮</div>
+        </div>
+
+        <div id="home-tab" class="tab-content">
+            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
+                <h3>Welcome to WhatsApp Style Chat!</h3>
+                <p>Niche dosto ke icon 👥 par click karein.</p>
+                <br>
+                <button onclick="openChat('mizan09')" style="background:var(--wa-teal); color:white; padding:10px 20px; border:none; border-radius:20px;">Chat with mizan09</button>
+            </div>
+        </div>
+
+        <div id="search-tab" class="tab-content" style="display:none;">
+            <h3>Find Friends</h3>
+            <p>New friends search logic goes here...</p>
+        </div>
+
+        <div id="settings-tab" class="tab-content" style="display:none;">
+            <h3 style="margin-bottom: 15px;">Settings</h3>
+            <div class="s-item">👤 Profile Info</div>
+            <div class="s-item">🔒 Privacy & Security</div>
+            <div class="s-item">💬 Chat Backup</div>
+            <button onclick="logout()" style="background:#e74c3c; color:white; width:100%; padding:15px; border:none; border-radius:10px; margin-top:20px; font-weight:bold;">LOGOUT FROM DEVICE</button>
         </div>
 
         <div class="nav">
-            <span onclick="showTab('home-tab')">🏠</span>
+            <span onclick="showTab('home-tab')">💬</span>
             <span onclick="showTab('search-tab')">🔍</span>
-            <span onclick="showTab('friend-tab')">👥</span>
-            <span onclick="localStorage.clear(); location.reload();">🚪</span>
+            <span onclick="showTab('settings-tab')">⚙️</span>
         </div>
     </div>
+
+    <div id="chat-screen">
+        <div class="chat-head">
+            <span onclick="closeChat()" style="cursor: pointer; font-size: 22px;">←</span>
+            <div style="width: 38px; height: 38px; background: #ddd; border-radius: 50%;"></div>
+            <div>
+                <b id="chat-user-name" style="display: block;">User</b>
+                <span style="font-size: 11px; opacity: 0.9;">online</span>
+            </div>
+        </div>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-input">
+            <span style="font-size: 20px; color: #555;">📎</span>
+            <input type="text" id="msg-input" placeholder="Type a message">
+            <button class="send-btn" onclick="sendMsg()">➤</button>
+        </div>
+    </div>
+
 </body>
 </html>

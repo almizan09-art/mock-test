@@ -7,7 +7,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        // Photo upload ke liye Storage import kiya
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -51,47 +50,6 @@
             location.reload();
         }
 
-        // --- PROFILE PHOTO SYSTEM (UPLOAD & DELETE) ---
-        window.triggerPfpUpload = () => document.getElementById('pfp-input').click();
-
-        window.uploadPfp = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const loading = document.getElementById('pfp-loading');
-            loading.style.display = 'block';
-
-            try {
-                const storageRef = ref(storage, `profile_pics/${currentUser}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-                
-                await updateDoc(doc(db, "users", currentUser), { pfp: url });
-                loadProfile();
-                alert("Profile photo updated!");
-            } catch (err) {
-                alert("Upload failed: " + err.message);
-            } finally {
-                loading.style.display = 'none';
-            }
-        };
-
-        window.deletePfp = async () => {
-            if (!confirm("Are you sure you want to remove your profile photo?")) return;
-            
-            try {
-                const storageRef = ref(storage, `profile_pics/${currentUser}`);
-                await deleteObject(storageRef);
-                await updateDoc(doc(db, "users", currentUser), { pfp: "" });
-                loadProfile();
-                alert("Photo removed!");
-            } catch (err) {
-                // Agar file storage me nahi hai par URL db me hai, tab bhi reset kar dena chahiye
-                await updateDoc(doc(db, "users", currentUser), { pfp: "" });
-                loadProfile();
-            }
-        };
-
         // --- TAB NAVIGATION ---
         window.showTab = (t) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -100,24 +58,69 @@
             
             if(t === 'home-tab') loadHomeFeed();
             if(t === 'profile-tab') loadProfile();
+            if(t === 'search-tab') {
+                setTimeout(() => document.getElementById('search-input').focus(), 150);
+            }
+        }
+
+        // --- PHOTO & POST SYSTEM ---
+        window.triggerPfpUpload = () => document.getElementById('pfp-input').click();
+        window.openPostModal = () => document.getElementById('post-modal').style.display = 'flex';
+        window.closePostModal = () => document.getElementById('post-modal').style.display = 'none';
+
+        window.uploadPfp = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('pfp-loading').innerText = "Uploading...";
+            try {
+                const storageRef = ref(storage, `profile_pics/${currentUser}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+                await updateDoc(doc(db, "users", currentUser), { pfp: url });
+                loadProfile();
+            } catch (err) { alert("Upload failed: " + err.message); }
+        };
+
+        window.submitPost = async () => {
+            const url = document.getElementById('post-url').value.trim();
+            const caption = document.getElementById('post-caption').value.trim();
+            if(!url) return alert("URL zaroori hai!");
+            await addDoc(collection(db, "posts"), {
+                username: currentUser, content: url, caption: caption, timestamp: serverTimestamp()
+            });
+            closePostModal();
+            showTab('home-tab');
+        };
+
+        // --- FEED & PROFILE LOAD ---
+        function loadHomeFeed() {
+            const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snap) => {
+                const feed = document.getElementById('home-feed');
+                feed.innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    feed.innerHTML += `
+                        <div class="post-card">
+                            <div class="post-header"><b>${data.username}</b></div>
+                            <img src="${data.content}" class="post-media" onerror="this.style.display='none'">
+                            <div class="post-info"><b>${data.username}</b> ${data.caption}</div>
+                        </div>`;
+                });
+            });
         }
 
         async function loadProfile() {
             const snap = await getDoc(doc(db, "users", currentUser));
-            if(!snap.exists()) return;
             const data = snap.data();
-            const defaultPfp = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            const pfpUrl = data.pfp || defaultPfp;
-            
+            const pfpUrl = data.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
             document.getElementById('top-left-pfp').src = pfpUrl;
             document.getElementById('main-pfp').src = pfpUrl;
             document.getElementById('prof-name-title').innerText = data.username;
             document.getElementById('user-display').innerText = data.username;
             document.getElementById('prof-bio').innerText = data.bio || "";
+            document.getElementById('pfp-loading').innerText = "";
             
-            // Delete button tabhi dikhao jab photo real ho
-            document.getElementById('del-pfp-btn').style.display = data.pfp ? 'inline-block' : 'none';
-
             const q = query(collection(db, "posts"), where("username", "==", currentUser));
             onSnapshot(q, (snap) => {
                 const grid = document.getElementById('profile-grid');
@@ -147,52 +150,72 @@
         #auth { padding: 80px 30px; text-align: center; display: none; }
         #auth input { width: 100%; padding: 12px; margin: 10px 0; background: #121212; border: 1px solid var(--border); color: white; border-radius: 5px; }
         
-        .top-bar { position: sticky; top:0; background: black; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); z-index: 10; }
-        .top-left-profile img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #333; }
+        .top-bar { position: sticky; top:0; background: black; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); z-index: 10; height: 50px; }
+        .top-left-profile img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
 
-        /* Profile Photo CSS */
+        /* Search Styles */
+        .search-container { padding: 10px 15px; }
+        .search-box { display: flex; align-items: center; background: #262626; border-radius: 8px; padding: 8px 12px; border: 1px solid #363636; }
+        .search-box input { background: transparent; border: none; color: white; width: 100%; outline: none; font-size: 16px; }
+
+        /* Profile Styles */
         .pfp-wrapper { position: relative; display: inline-block; }
-        #main-pfp { width: 85px; height: 85px; border-radius: 50%; object-fit: cover; border: 2px solid #262626; cursor: pointer; }
-        .pfp-add-icon { position: absolute; bottom: 0; right: 0; background: var(--blue); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: 2px solid black; font-size: 14px; font-weight: bold; pointer-events: none; }
-        #pfp-loading { display: none; font-size: 10px; color: var(--blue); margin-top: 5px; }
-
-        .profile-head { padding: 15px; display: flex; align-items: center; gap: 25px; }
+        #main-pfp { width: 85px; height: 85px; border-radius: 50%; object-fit: cover; border: 2px solid #262626; }
+        .pfp-add-icon { position: absolute; bottom: 0; right: 0; background: var(--blue); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: 2px solid black; font-size: 14px; font-weight: bold; }
+        .profile-head { padding: 15px; display: flex; align-items: center; gap: 20px; }
         .stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
-        .stat-num { font-weight: bold; font-size: 18px; display: block; }
-        .stat-label { font-size: 13px; color: var(--gray); }
 
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 15px; }
-        .grid-item { aspect-ratio: 1/1; background: #111; overflow: hidden; }
-        .grid-item img { width: 100%; height: 100%; object-fit: cover; }
-
-        .edit-btn, .del-btn { flex: 1; background: #262626; border: none; color: white; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
-        .del-btn { background: #3d0a0a; color: #ff4d4d; margin-top: 10px; display: none; }
+        /* Post Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-box { background: #121212; padding: 20px; border-radius: 12px; width: 100%; border: 1px solid var(--border); }
 
         .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px; background: black; border-top: 0.5px solid var(--border); }
         .nav-item { font-size: 24px; cursor: pointer; }
         .tab-content { display: none; flex-direction: column; padding-bottom: 70px; }
+        .post-card { border-bottom: 0.5px solid var(--border); padding-bottom: 15px; }
+        .post-media { width: 100%; max-height: 400px; object-fit: cover; }
     </style>
 </head>
 <body>
 
     <div id="auth">
-        <h1 style="font-style: italic; font-size: 45px; margin-bottom: 20px;">MeetZone</h1>
+        <h1 style="font-style: italic; font-size: 45px;">MeetZone</h1>
         <input id="username" placeholder="Username">
         <input id="password" type="password" placeholder="Password">
-        <button onclick="handleAuth()" style="width:100%; padding:12px; background:var(--blue); color:white; border:none; border-radius:5px; font-weight:bold;">Log In</button>
+        <button onclick="handleAuth()" style="width:100%; padding:12px; background:var(--blue); color:white; border:none; border-radius:5px;">Log In</button>
     </div>
 
     <div id="app" style="display:none;">
         <div class="top-bar">
-            <div class="top-left-profile" style="display:flex; align-items:center; gap:10px;">
+            <div class="top-left-profile">
                 <img id="top-left-pfp" src="">
-                <span id="prof-name-title" style="font-weight:700; font-size:20px;">MeetZone</span>
+                <span id="prof-name-title" style="margin-left:8px; font-weight:700;">MeetZone</span>
             </div>
-            <span style="font-size: 28px; cursor: pointer;">+</span>
+            <span style="font-size: 28px; cursor: pointer;" onclick="openPostModal()">+</span>
         </div>
 
-        <div id="home-tab" class="tab-content" style="padding: 20px; text-align: center;">
-            <p style="color: gray;">Welcome to your feed!</p>
+        <div id="search-tab" class="tab-content">
+            <div class="search-container">
+                <div class="search-box">
+                    <span style="margin-right:8px;">🔍</span>
+                    <input id="search-input" type="text" placeholder="Search">
+                </div>
+            </div>
+            <p style="text-align:center; color:gray; margin-top:20px;">Search friends by ID</p>
+        </div>
+
+        <div id="post-modal" class="modal">
+            <div class="modal-box">
+                <h3 style="margin-bottom:10px;">New Post</h3>
+                <input id="post-url" placeholder="Paste Image URL (Image/Video Link)" style="width:100%; padding:10px; margin-bottom:10px; background:black; color:white; border:1px solid #333;">
+                <textarea id="post-caption" placeholder="Write a caption..." style="width:100%; background:black; color:white; border:1px solid #333; padding:10px;"></textarea>
+                <button onclick="submitPost()" style="width:100%; padding:12px; background:var(--blue); color:white; border:none; margin-top:10px;">Post Now</button>
+                <p onclick="closePostModal()" style="text-align:center; color:gray; cursor:pointer; margin-top:15px;">Cancel</p>
+            </div>
+        </div>
+
+        <div id="home-tab" class="tab-content">
+            <div id="home-feed"></div>
         </div>
 
         <div id="profile-tab" class="tab-content">
@@ -204,32 +227,22 @@
                 </div>
                 <div class="stats">
                     <div><span class="stat-num" id="post-count">0</span><span class="stat-label">posts</span></div>
-                    <div><span class="stat-num" id="follower-count">0</span><span class="stat-label">followers</span></div>
-                    <div><span class="stat-num" id="following-count">0</span><span class="stat-label">following</span></div>
+                    <div><span class="stat-num">0</span><span class="stat-label">followers</span></div>
+                    <div><span class="stat-num">0</span><span class="stat-label">following</span></div>
                 </div>
             </div>
-            <div id="pfp-loading" style="text-align:center;">Uploading...</div>
-            
-            <div style="padding: 0 15px 15px;">
-                <b id="user-display">username</b><br>
-                <span id="prof-bio">biology...</span>
+            <p id="pfp-loading" style="text-align:center; font-size:12px; color:var(--blue);"></p>
+            <div style="padding:0 15px 15px;">
+                <b id="user-display"></b><br>
+                <span id="prof-bio"></span>
             </div>
-
-            <div style="display:flex; flex-direction:column; gap:5px; padding:0 15px;">
-                <div style="display:flex; gap:10px;">
-                    <button class="edit-btn" onclick="saveProfile()">Edit profile</button>
-                    <button class="edit-btn">Share profile</button>
-                </div>
-                <button id="del-pfp-btn" class="del-btn" onclick="deletePfp()">Remove Photo</button>
-            </div>
-
             <div class="grid-container" id="profile-grid"></div>
         </div>
 
         <div class="nav">
             <span class="nav-item" onclick="showTab('home-tab')">🏠</span>
-            <span class="nav-item">🔍</span>
-            <span class="nav-item">➕</span>
+            <span class="nav-item" onclick="showTab('search-tab')">🔍</span>
+            <span class="nav-item" onclick="openPostModal()">➕</span>
             <span class="nav-item" onclick="showTab('profile-tab')">👤</span>
             <span class="nav-item" onclick="if(confirm('Logout?')) { localStorage.clear(); location.reload(); }">⚙️</span>
         </div>

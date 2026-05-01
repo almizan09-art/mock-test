@@ -32,7 +32,16 @@
                 if (userSnap.data().password === pass) { loginSuccess(user); }
                 else { alert("Galat Password!"); }
             } else {
-                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "New to MeetZone", pfp: "" });
+                // Initial real stats set to 0
+                await setDoc(userRef, { 
+                    username: user, 
+                    password: pass, 
+                    friends: [], 
+                    bio: "New to MeetZone", 
+                    pfp: "",
+                    followersCount: 0,
+                    followingCount: 0 
+                });
                 loginSuccess(user);
             }
         }
@@ -42,7 +51,6 @@
             location.reload();
         }
 
-        // --- NAVIGATION ---
         window.showTab = (t) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(t).style.display = 'flex';
@@ -50,7 +58,7 @@
             if(t === 'profile-tab') loadProfile();
         }
 
-        // --- POSTING SYSTEM ---
+        // --- POSTING ---
         window.openPostModal = () => document.getElementById('post-modal').style.display = 'flex';
         window.closePostModal = () => document.getElementById('post-modal').style.display = 'none';
 
@@ -66,13 +74,10 @@
                 timestamp: serverTimestamp()
             });
             
-            document.getElementById('post-url').value = "";
-            document.getElementById('post-caption').value = "";
             closePostModal();
             showTab('profile-tab');
         }
 
-        // --- LOAD HOME FEED ---
         function loadHomeFeed() {
             const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
             onSnapshot(q, (snap) => {
@@ -83,24 +88,31 @@
                     feed.innerHTML += `
                         <div class="post-card">
                             <div class="post-header"><b>${data.username}</b></div>
-                            <img src="${data.content}" class="post-media">
+                            <img src="${data.content}" class="post-media" onerror="this.src='https://via.placeholder.com/300?text=Invalid+Image'">
                             <div class="post-info"><b>${data.username}</b> ${data.caption}</div>
                         </div>`;
                 });
             });
         }
 
-        // --- PROFILE SYSTEM ---
+        // --- PROFILE LOGIC ---
         async function loadProfile() {
             const snap = await getDoc(doc(db, "users", currentUser));
             const data = snap.data();
             
-            // Set Stats & Info
-            document.getElementById('prof-name').innerText = data.username;
-            document.getElementById('prof-bio').innerText = data.bio || "No bio yet";
-            if(data.pfp) document.getElementById('main-pfp').src = data.pfp;
+            // Updates Top-Left PFP and Main Profile PFP
+            const pfpUrl = data.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+            document.getElementById('top-left-pfp').src = pfpUrl;
+            document.getElementById('main-pfp').src = pfpUrl;
+            
+            document.getElementById('prof-name-title').innerText = data.username;
+            document.getElementById('user-display').innerText = data.username;
+            document.getElementById('prof-bio').innerText = data.bio || "";
+            
+            // Real Stats from Database (Fallback to 0)
+            document.getElementById('follower-count').innerText = data.followersCount || 0;
+            document.getElementById('following-count').innerText = data.followingCount || 0;
 
-            // Load User Posts in Grid
             const q = query(collection(db, "posts"), where("username", "==", currentUser));
             onSnapshot(q, (snap) => {
                 const grid = document.getElementById('profile-grid');
@@ -113,58 +125,61 @@
         }
 
         window.saveProfile = async () => {
-            const bio = prompt("Enter new Biology (Bio):");
+            const bio = prompt("Enter new Biology (Bio):", document.getElementById('prof-bio').innerText);
             const pfp = prompt("Enter Profile Picture URL:");
-            if(bio || pfp) {
-                await updateDoc(doc(db, "users", currentUser), { 
-                    bio: bio || "MeetZone User", 
-                    pfp: pfp || "" 
-                });
+            const updates = {};
+            if(bio !== null) updates.bio = bio;
+            if(pfp) updates.pfp = pfp;
+            
+            if(Object.keys(updates).length > 0) {
+                await updateDoc(doc(db, "users", currentUser), updates);
                 loadProfile();
             }
         }
 
-        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; showTab('home-tab'); } }
+        window.onload = () => { if(currentUser) { 
+            document.getElementById('auth').style.display='none'; 
+            document.getElementById('app').style.display='block'; 
+            loadProfile(); // Initial pfp load
+            showTab('home-tab'); 
+        } }
     </script>
     <style>
         :root { --insta-bg: #000; --text: #fff; --gray: #a8a8a8; --border: #262626; }
         * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
-        body { background-color: var(--insta-bg); color: var(--text); }
+        body { background-color: var(--insta-bg); color: var(--text); overflow-x: hidden; }
         
-        .top-bar { position: sticky; top:0; background: black; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); z-index: 10; }
-        
-        /* Profile Layout */
-        .profile-head { padding: 20px 15px; display: flex; align-items: center; gap: 30px; }
-        .pfp-container { position: relative; width: 80px; height: 80px; }
-        #main-pfp { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
-        .stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
-        .stat-num { font-weight: bold; font-size: 18px; display: block; }
-        .stat-label { font-size: 13px; color: var(--gray); }
-        
-        .profile-bio { padding: 0 15px 20px; font-size: 14px; }
-        .profile-btns { display: flex; gap: 10px; padding: 0 15px; }
-        .edit-btn { flex: 1; background: #363636; border: none; color: white; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .top-bar { position: sticky; top:0; background: black; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); z-index: 10; height: 50px; }
+        .top-left-profile { display: flex; align-items: center; gap: 10px; }
+        .top-left-profile img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #333; }
 
-        /* Grid */
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 20px; }
+        .profile-head { padding: 20px 15px; display: flex; align-items: center; gap: 20px; }
+        .pfp-container { width: 85px; height: 85px; }
+        #main-pfp { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border); }
+        .stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
+        .stat-num { font-weight: bold; font-size: 16px; display: block; }
+        .stat-label { font-size: 12px; color: var(--text); }
+        
+        .profile-bio { padding: 0 15px 15px; font-size: 14px; }
+        .profile-btns { display: flex; gap: 8px; padding: 0 15px; }
+        .edit-btn { flex: 1; background: #363636; border: none; color: white; padding: 7px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 15px; }
         .grid-item { aspect-ratio: 1/1; background: #121212; overflow: hidden; }
         .grid-item img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-box { background: #262626; padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #363636; background: #121212; color: white; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #363636; background: #121212; color: white; outline: none; }
 
-        /* Nav */
-        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 15px; background: black; border-top: 0.5px solid var(--border); }
+        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px; background: black; border-top: 0.5px solid var(--border); }
         .nav-item { font-size: 24px; cursor: pointer; }
-        .tab-content { display: none; flex-direction: column; padding-bottom: 80px; }
+        .tab-content { display: none; flex-direction: column; padding-bottom: 70px; }
 
-        /* Home Post */
-        .post-card { margin-bottom: 15px; }
-        .post-header { padding: 10px; font-size: 14px; }
-        .post-media { width: 100%; }
-        .post-info { padding: 10px; font-size: 14px; }
+        .post-card { border-bottom: 0.5px solid var(--border); padding-bottom: 10px; }
+        .post-header { padding: 12px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .post-media { width: 100%; min-height: 200px; background: #111; display: block; }
+        .post-info { padding: 10px 12px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -177,16 +192,19 @@
 
     <div id="app" style="display:none;">
         <div class="top-bar">
-            <span id="prof-name" style="font-weight:700; font-size:22px;">MeetZone</span>
-            <span style="font-size: 30px; cursor: pointer;" onclick="openPostModal()">+</span>
+            <div class="top-left-profile">
+                <img id="top-left-pfp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+                <span id="prof-name-title" style="font-weight:700; font-size:20px;">MeetZone</span>
+            </div>
+            <span style="font-size: 28px; cursor: pointer;" onclick="openPostModal()">+</span>
         </div>
 
         <div id="post-modal" class="modal">
             <div class="modal-box">
                 <h3 style="margin-bottom:10px;">New Post</h3>
-                <input id="post-url" placeholder="Paste Photo URL">
+                <input id="post-url" placeholder="Paste Image URL (link)">
                 <textarea id="post-caption" placeholder="Write a caption..."></textarea>
-                <button onclick="submitPost()" style="width:100%; padding:12px; background:#0095f6; color:white; border:none; border-radius:8px;">Share Post</button>
+                <button onclick="submitPost()" style="width:100%; padding:12px; background:#0095f6; color:white; border:none; border-radius:8px; font-weight:bold;">Share</button>
                 <p onclick="closePostModal()" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Cancel</p>
             </div>
         </div>
@@ -198,27 +216,29 @@
         <div id="profile-tab" class="tab-content">
             <div class="profile-head">
                 <div class="pfp-container">
-                    <img id="main-pfp" src="https://via.placeholder.com/150">
+                    <img id="main-pfp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
                 </div>
                 <div class="stats">
                     <div><span class="stat-num" id="post-count">0</span><span class="stat-label">posts</span></div>
-                    <div><span class="stat-num">1,240</span><span class="stat-label">followers</span></div>
-                    <div><span class="stat-num">350</span><span class="stat-label">following</span></div>
+                    <div><span class="stat-num" id="follower-count">0</span><span class="stat-label">followers</span></div>
+                    <div><span class="stat-num" id="following-count">0</span><span class="stat-label">following</span></div>
                 </div>
             </div>
             <div class="profile-bio">
-                <b id="user-display">User Profile</b><br>
-                <span id="prof-bio">Loading biology...</span>
+                <b id="user-display">username</b><br>
+                <span id="prof-bio">biology goes here...</span>
             </div>
             <div class="profile-btns">
                 <button class="edit-btn" onclick="saveProfile()">Edit profile</button>
                 <button class="edit-btn">Share profile</button>
             </div>
-            <div class="grid-container" id="profile-grid">
-                </div>
+            <div class="grid-container" id="profile-grid"></div>
         </div>
 
-        <div id="friend-tab" class="tab-content" style="padding:20px; text-align:center; color:gray;">Chat section here</div>
+        <div id="friend-tab" class="tab-content" style="padding:20px; text-align:center; color:gray;">
+            <h3>Explore</h3>
+            <p>Coming Soon...</p>
+        </div>
 
         <div class="nav">
             <span class="nav-item" onclick="showTab('home-tab')">🏠</span>

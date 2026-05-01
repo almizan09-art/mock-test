@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeetZone | Social Chat</title>
+    <title>MeetZone | Social Chat & Post</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCVo-BZ88zoNxCjp-GfwTI9ABe14LNGnUA",
@@ -20,32 +20,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let currentUser = localStorage.getItem('MeetZoneUser') || "";
-        let activeChat = "";
-        let unsubscribeMsgs = null;
 
-        // --- GLOBAL NOTIFICATION TRACKER ---
-        function listenForNotifications() {
-            onSnapshot(doc(db, "users", currentUser), (snap) => {
-                const friends = snap.data()?.friends || [];
-                let totalUnread = 0;
-
-                friends.forEach(f => {
-                    const chatId = [currentUser, f].sort().join("_");
-                    const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "desc"), limit(1));
-                    
-                    onSnapshot(q, (msgSnap) => {
-                        msgSnap.forEach(d => {
-                            if (d.data().sender !== currentUser && activeChat !== f) {
-                                document.getElementById('notif-dot').style.display = 'block';
-                                const friendItem = document.getElementById(`status-${f}`);
-                                if(friendItem) friendItem.innerText = "1 new message";
-                            }
-                        });
-                    });
-                });
-            });
-        }
-
+        // --- AUTH & INITIALIZATION ---
         window.handleAuth = async function() {
             const user = document.getElementById('username').value.trim().toLowerCase();
             const pass = document.getElementById('password').value.trim();
@@ -56,7 +32,7 @@
                 if (userSnap.data().password === pass) { loginSuccess(user); }
                 else { alert("Galat Password!"); }
             } else {
-                await setDoc(userRef, { username: user, password: pass, friends: [] });
+                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "Hey there! I'm using MeetZone.", pfp: "" });
                 loginSuccess(user);
             }
         }
@@ -66,177 +42,121 @@
             location.reload();
         }
 
+        // --- TAB NAVIGATION ---
         window.showTab = (t) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(t).style.display = 'flex';
-            if(t === 'friend-tab') {
-                document.getElementById('notif-dot').style.display = 'none';
-                loadFriends();
-            }
-            if(t === 'search-tab') loadUsers();
+            if(t === 'home-tab') loadPosts();
+            if(t === 'profile-tab') loadProfileData();
         }
 
-        window.addFriend = async function(f) {
-            await updateDoc(doc(db, "users", currentUser), { friends: arrayUnion(f) });
-            await updateDoc(doc(db, "users", f), { friends: arrayUnion(currentUser) });
-            showTab('friend-tab');
+        // --- POST SYSTEM ---
+        window.createPost = async () => {
+            const imgUrl = prompt("Enter Image/Video URL:");
+            const caption = prompt("Write a caption:");
+            if(!imgUrl) return;
+
+            await addDoc(collection(db, "posts"), {
+                user: currentUser,
+                content: imgUrl,
+                caption: caption,
+                time: serverTimestamp()
+            });
+            alert("Post Uploaded!");
+            loadPosts();
         }
 
-        function loadFriends() {
-            onSnapshot(doc(db, "users", currentUser), (snap) => {
-                const list = document.getElementById('friend-list');
-                list.innerHTML = "";
-                snap.data()?.friends?.forEach(f => {
-                    list.innerHTML += `
-                        <div class="card" onclick="openChat('${f}')">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div class="avatar">👤</div>
-                                <div>
-                                    <div style="font-weight:600">${f}</div>
-                                    <div id="status-${f}" style="font-size:12px; color:var(--insta-blue)">Tap to chat</div>
-                                </div>
-                            </div>
+        function loadPosts() {
+            const q = query(collection(db, "posts"), orderBy("time", "desc"));
+            onSnapshot(q, (snap) => {
+                const feed = document.getElementById('home-feed');
+                feed.innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    feed.innerHTML += `
+                        <div class="post-card">
+                            <div class="post-header"><b>${data.user}</b></div>
+                            <img src="${data.content}" class="post-img" onerror="this.src='https://placehold.co/600x400?text=Video+or+Link'">
+                            <div class="post-meta"><b>${data.user}</b> ${data.caption || ""}</div>
                         </div>`;
                 });
             });
         }
 
-        window.openChat = (f) => {
-            activeChat = f;
-            document.getElementById('chat-title').innerText = f;
-            const statusEl = document.getElementById(`status-${f}`);
-            if(statusEl) statusEl.innerText = "Tap to chat";
-            showTab('chat-box');
-            loadMsgs();
+        // --- PROFILE EDIT ---
+        async function loadProfileData() {
+            const snap = await getDoc(doc(db, "users", currentUser));
+            const data = snap.data();
+            document.getElementById('edit-bio').value = data.bio || "";
+            document.getElementById('edit-pfp').value = data.pfp || "";
         }
 
-        function loadMsgs() {
-            if(unsubscribeMsgs) unsubscribeMsgs();
-            const chatId = [currentUser, activeChat].sort().join("_");
-            const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
-            unsubscribeMsgs = onSnapshot(q, (snap) => {
-                const box = document.getElementById('msgs');
-                box.innerHTML = "";
-                snap.forEach(d => {
-                    const isMe = d.data().sender === currentUser;
-                    box.innerHTML += `<div class="msg-wrapper ${isMe?'me-wrap':'you-wrap'}"><div class="msg-bubble ${isMe?'me':'you'}">${d.data().text}</div></div>`;
-                });
-                box.scrollTop = box.scrollHeight;
-            });
+        window.updateProfile = async () => {
+            const newBio = document.getElementById('edit-bio').value;
+            const newPfp = document.getElementById('edit-pfp').value;
+            await updateDoc(doc(db, "users", currentUser), { bio: newBio, pfp: newPfp });
+            alert("Profile Updated!");
         }
 
-        window.sendMsg = async () => {
-            const input = document.getElementById('m-input');
-            if(!input.value.trim()) return;
-            const chatId = [currentUser, activeChat].sort().join("_");
-            const text = input.value;
-            input.value = "";
-            await addDoc(collection(db, "chats", chatId, "messages"), { text, sender: currentUser, time: serverTimestamp() });
-        }
-
-        window.onload = () => { 
-            if(currentUser) { 
-                document.getElementById('auth').style.display='none'; 
-                document.getElementById('app').style.display='block'; 
-                showTab('home-tab');
-                listenForNotifications();
-            } 
-        }
+        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; showTab('home-tab'); } }
     </script>
     <style>
         :root { --insta-blue: #0095f6; --insta-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
         
-        /* Header Styling */
-        .top-bar { 
-            position: sticky; top: 0; background: white; z-index: 100;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 15px; border-bottom: 1px solid #dbdbdb; 
-        }
-        .profile-section { display: flex; align-items: center; gap: 12px; }
-        .profile-ring {
-            width: 34px; height: 34px; border-radius: 50%;
-            background: var(--insta-gradient); padding: 2px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .profile-thumb {
-            width: 100%; height: 100%; background: white; 
-            border-radius: 50%; display: grid; place-items: center; font-size: 14px;
-        }
+        .top-bar { position: sticky; top: 0; background: white; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid #dbdbdb; }
+        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px; background: white; border-top: 1px solid #dbdbdb; z-index:100; }
+        .nav-item { font-size: 24px; cursor: pointer; }
+        
+        /* Post Styling */
+        .post-card { border-bottom: 1px solid #efefef; margin-bottom: 15px; background: white; }
+        .post-header { padding: 10px; display: flex; align-items: center; font-size: 14px; }
+        .post-img { width: 100%; max-height: 500px; object-fit: cover; }
+        .post-meta { padding: 10px; font-size: 14px; }
 
-        /* Navigation */
-        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px; background: white; border-top: 1px solid #dbdbdb; }
-        .nav-item { position: relative; font-size: 24px; cursor: pointer; transition: transform 0.1s; }
-        .nav-item:active { transform: scale(0.9); }
-        .dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff3b30; border-radius: 50%; display: none; border: 2px solid white; }
+        .tab-content { display: none; flex-direction: column; padding-bottom: 80px; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #dbdbdb; border-radius: 5px; }
+        .btn-blue { background: var(--insta-blue); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; width: 100%; }
         
-        /* Content */
-        .tab-content { display: none; flex-direction: column; padding: 15px; padding-bottom: 80px; }
-        .card { padding: 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; cursor: pointer; margin-bottom: 5px; }
-        .card:active { background: #fafafa; }
-        .avatar { width: 45px; height: 45px; background: #efefef; border-radius: 50%; display: grid; place-items: center; font-size: 20px; border: 1px solid #dbdbdb; }
-        
-        /* Chat UI */
-        #msgs { height: calc(100vh - 180px); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
-        .msg-wrapper { display: flex; margin-bottom: 8px; }
-        .me-wrap { justify-content: flex-end; }
-        .msg-bubble { padding: 8px 16px; border-radius: 18px; max-width: 70%; font-size: 15px; line-height: 1.4; }
-        .me { background: var(--insta-blue); color: white; }
-        .you { background: #efefef; color: #262626; border: 1px solid #dbdbdb; }
-        
-        .chat-input { position: fixed; bottom: 70px; width: 94%; left: 3%; display: flex; background: white; border: 1px solid #dbdbdb; border-radius: 25px; padding: 5px 15px; align-items: center; }
-        input { border: none; padding: 10px; width: 100%; outline: none; font-size: 14px; }
-        
-        /* Login */
-        #auth input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dbdbdb; border-radius: 5px; background: #fafafa; }
+        #plus-btn { font-size: 28px; cursor: pointer; color: #262626; }
     </style>
 </head>
 <body>
     <div id="auth" style="padding:50px 30px; text-align:center; max-width: 400px; margin: auto;">
         <h1 style="font-style: italic; margin-bottom: 30px; font-size: 32px;">MeetZone</h1>
-        <input id="username" placeholder="Phone number, username, or email">
+        <input id="username" placeholder="Username">
         <input id="password" type="password" placeholder="Password">
-        <button onclick="handleAuth()" style="width:100%; padding:12px; background:var(--insta-blue); color:white; border:none; border-radius:8px; font-weight:600; margin-top: 10px;">Log In</button>
+        <button onclick="handleAuth()" class="btn-blue">Log In</button>
     </div>
 
     <div id="app" style="display:none;">
         <div class="top-bar">
-            <div class="profile-section">
-                <div class="profile-ring">
-                    <div class="profile-thumb">👤</div>
-                </div>
-                <span style="font-weight:700; font-size:20px; letter-spacing: -0.5px;">MeetZone</span>
-            </div>
-            <span id="chat-title" style="color:var(--insta-blue); font-weight:600; font-size: 15px;"></span>
+            <span style="font-weight:700; font-size:22px;">MeetZone</span>
+            <span id="plus-btn" onclick="createPost()">⊕</span>
         </div>
         
         <div id="home-tab" class="tab-content">
-            <h3 style="text-align:center; margin-top:100px; color: #8e8e8e;">Welcome to your feed!</h3>
+            <div id="home-feed"></div>
         </div>
 
-        <div id="search-tab" class="tab-content">
-            <h3 style="margin-bottom: 15px;">Explore</h3>
-            <div id="search-list"></div>
+        <div id="profile-tab" class="tab-content" style="padding: 20px;">
+            <h3>Edit Profile</h3>
+            <label>Profile Picture URL</label>
+            <input id="edit-pfp" placeholder="https://image-link.com/photo.jpg">
+            <label>Bio</label>
+            <textarea id="edit-bio" placeholder="Tell us about yourself..."></textarea>
+            <button onclick="updateProfile()" class="btn-blue">Save Profile</button>
+            <button onclick="localStorage.clear(); location.reload();" style="margin-top:20px; background:none; border:none; color:red;">Logout</button>
         </div>
 
-        <div id="friend-tab" class="tab-content">
-            <h3 style="margin-bottom: 15px;">Direct Messages</h3>
-            <div id="friend-list"></div>
-        </div>
-        
-        <div id="chat-box" class="tab-content">
-            <div id="msgs"></div>
-            <div class="chat-input">
-                <input id="m-input" placeholder="Message...">
-                <button onclick="sendMsg()" style="background:none; border:none; color:var(--insta-blue); font-weight:700; font-size: 14px; cursor: pointer;">Send</button>
-            </div>
-        </div>
+        <div id="search-tab" class="tab-content"><h3 style="padding:20px;">Search coming soon...</h3></div>
+        <div id="friend-tab" class="tab-content"><h3 style="padding:20px;">Messages coming soon...</h3></div>
 
         <div class="nav">
             <span class="nav-item" onclick="showTab('home-tab')">🏠</span>
             <span class="nav-item" onclick="showTab('search-tab')">🔍</span>
-            <span class="nav-item" onclick="showTab('friend-tab')">💬<div id="notif-dot" class="dot"></div></span>
-            <span class="nav-item" onclick="if(confirm('Logout?')) { localStorage.clear(); location.reload(); }">⚙️</span>
+            <span class="nav-item" onclick="showTab('friend-tab')">💬</span>
+            <span class="nav-item" onclick="showTab('profile-tab')">👤</span>
         </div>
     </div>
 </body>

@@ -6,8 +6,7 @@
     <title>MeetZone | Social App</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion, arrayRemove, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCVo-BZ88zoNxCjp-GfwTI9ABe14LNGnUA",
@@ -20,53 +19,32 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
         let currentUser = localStorage.getItem('MeetZoneUser') || "";
-        let activeChatUser = "";
-
-        // --- AUTH ---
-        window.handleAuth = async function() {
-            const user = document.getElementById('username').value.trim().toLowerCase();
-            const pass = document.getElementById('password').value.trim();
-            if (user.length < 3) return alert("Username invalid!");
-            try {
-                const userRef = doc(db, "users", user);
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists()) {
-                    if (userSnap.data().password === pass) { loginSuccess(user); }
-                    else { alert("Galat Password!"); }
-                } else {
-                    await setDoc(userRef, { username: user, password: pass, bio: "New to MeetZone", pfp: "" });
-                    loginSuccess(user);
-                }
-            } catch (err) { alert("Error: " + err.message); }
-        }
-        function loginSuccess(user) { localStorage.setItem('MeetZoneUser', user); location.reload(); }
 
         // --- NAVIGATION ---
-        window.showTab = (t) => {
+        window.showTab = (t, targetUser = null) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(t).style.display = 'flex';
             if(t === 'home-tab') loadHomeFeed();
-            if(t === 'profile-tab') loadProfile(currentUser);
+            if(t === 'profile-tab') loadProfile(targetUser || currentUser);
             if(t === 'search-tab') setupSearch();
-            if(t === 'chat-list-tab') loadChatList();
         }
 
-        // --- SEARCH SYSTEM ---
+        // --- SEARCH SYSTEM (FIXED) ---
         function setupSearch() {
             const input = document.getElementById('search-input');
             input.oninput = async () => {
                 const val = input.value.trim().toLowerCase();
                 const resDiv = document.getElementById('search-results');
                 if(!val) { resDiv.innerHTML = ""; return; }
-                const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + '\uf8ff'), limit(5));
+                
+                const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + '\uf8ff'), limit(10));
                 onSnapshot(q, (snap) => {
                     resDiv.innerHTML = "";
                     snap.forEach(d => {
                         const u = d.data();
                         resDiv.innerHTML += `
-                            <div class="user-row" onclick="loadProfile('${u.username}')">
+                            <div class="user-row" onclick="showTab('profile-tab', '${u.username}')">
                                 <img src="${u.pfp || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
                                 <b>${u.username}</b>
                             </div>`;
@@ -75,82 +53,61 @@
             }
         }
 
-        // --- CHAT SYSTEM ---
-        window.openChat = (otherUser) => {
-            activeChatUser = otherUser;
-            document.getElementById('chat-with-name').innerText = otherUser;
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.getElementById('chat-view-tab').style.display = 'flex';
+        // --- FOLLOW SYSTEM (INSTAGRAM STYLE) ---
+        window.toggleFollow = async (targetUser) => {
+            const myRef = doc(db, "users", currentUser);
+            const targetRef = doc(db, "users", targetUser);
+            const targetSnap = await getDoc(targetRef);
+            const mySnap = await getDoc(myRef);
             
-            const chatID = [currentUser, otherUser].sort().join("_");
-            const q = query(collection(db, "chats", chatID, "messages"), orderBy("timestamp", "asc"));
-            onSnapshot(q, (snap) => {
-                const box = document.getElementById('chat-box');
-                box.innerHTML = "";
-                snap.forEach(d => {
-                    const m = d.data();
-                    const side = m.sender === currentUser ? "sent" : "received";
-                    box.innerHTML += `<div class="msg ${side}">${m.text}</div>`;
-                });
-                box.scrollTop = box.scrollHeight;
-            });
+            const isFollowing = (mySnap.data().following || []).includes(targetUser);
+
+            if (isFollowing) {
+                await updateDoc(myRef, { following: arrayRemove(targetUser) });
+                await updateDoc(targetRef, { followers: arrayRemove(currentUser) });
+            } else {
+                await updateDoc(myRef, { following: arrayUnion(targetUser) });
+                await updateDoc(targetRef, { followers: arrayUnion(currentUser) });
+            }
         }
 
-        window.sendMsg = async () => {
-            const text = document.getElementById('chat-input').value.trim();
-            if(!text) return;
-            const chatID = [currentUser, activeChatUser].sort().join("_");
-            await addDoc(collection(db, "chats", chatID, "messages"), {
-                text: text, sender: currentUser, timestamp: serverTimestamp()
+        // --- PROFILE LOADING ---
+        async function loadProfile(username) {
+            onSnapshot(doc(db, "users", username), (snap) => {
+                if(!snap.exists()) return;
+                const data = snap.data();
+                const isMe = username === currentUser;
+                
+                document.getElementById('main-pfp').src = data.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                document.getElementById('user-display').innerText = data.username;
+                document.getElementById('prof-bio').innerText = data.bio || "No bio yet";
+                
+                // Counts
+                document.getElementById('follower-count').innerText = (data.followers || []).length;
+                document.getElementById('following-count').innerText = (data.following || []).length;
+
+                // Action Button (Follow/Edit)
+                const actionDiv = document.getElementById('profile-action-btn');
+                if (isMe) {
+                    actionDiv.innerHTML = `<button class="edit-btn">Edit Profile</button>`;
+                } else {
+                    const amIFollowing = (data.followers || []).includes(currentUser);
+                    actionDiv.innerHTML = amIFollowing ? 
+                        `<button class="edit-btn" onclick="toggleFollow('${username}')">Following</button>` :
+                        `<button class="edit-btn follow-blue" onclick="toggleFollow('${username}')">Follow</button>`;
+                }
             });
-            document.getElementById('chat-input').value = "";
-        }
 
-        // Notification Listener
-        function listenForMessages() {
-            onSnapshot(collection(db, "users", currentUser, "notifications"), (snap) => {
-                snap.docChanges().forEach(change => {
-                    if (change.type === "added") {
-                        const data = change.doc.data();
-                        alert(`${data.from} sent 1 message`);
-                    }
-                });
-            });
-        }
-
-        // --- POSTING ---
-        window.openPostModal = () => document.getElementById('post-modal').style.display = 'flex';
-        window.closePostModal = () => document.getElementById('post-modal').style.display = 'none';
-        window.submitPost = async () => {
-            const url = document.getElementById('post-url').value.trim();
-            const caption = document.getElementById('post-caption').value.trim();
-            if(!url) return;
-            await addDoc(collection(db, "posts"), { username: currentUser, content: url, caption: caption, timestamp: serverTimestamp() });
-            closePostModal();
-            showTab('home-tab');
-        };
-
-        // --- PROFILE & FEED ---
-        async function loadProfile(user) {
-            const snap = await getDoc(doc(db, "users", user));
-            const data = snap.data();
-            const isMyProfile = user === currentUser;
-            
-            document.getElementById('main-pfp').src = data.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            document.getElementById('user-display').innerText = data.username;
-            document.getElementById('prof-bio').innerText = data.bio || "";
-            document.getElementById('profile-action-btn').innerHTML = isMyProfile ? 
-                `<button class="edit-btn">Edit Profile</button>` : 
-                `<button class="edit-btn" onclick="openChat('${user}')" style="background:#0095f6; color:white;">Message</button>`;
-
-            const q = query(collection(db, "posts"), where("username", "==", user));
+            // Load User Posts
+            const q = query(collection(db, "posts"), where("username", "==", username), orderBy("timestamp", "desc"));
             onSnapshot(q, (snap) => {
                 const grid = document.getElementById('profile-grid');
                 grid.innerHTML = "";
                 document.getElementById('post-count').innerText = snap.size;
-                snap.forEach(d => { grid.innerHTML += `<div class="grid-item"><img src="${d.data().content}"></div>`; });
+                snap.forEach(d => {
+                    grid.innerHTML += `<div class="grid-item"><img src="${d.data().content}"></div>`;
+                });
             });
-            if(isMyProfile) document.getElementById('top-left-pfp').src = data.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
         }
 
         function loadHomeFeed() {
@@ -160,92 +117,66 @@
                 feed.innerHTML = "";
                 snap.forEach(d => {
                     const data = d.data();
-                    feed.innerHTML += `<div class="post-card"><div class="post-header"><b>${data.username}</b></div><img src="${data.content}" class="post-media"><div class="post-info"><b>${data.username}</b> ${data.caption}</div></div>`;
+                    feed.innerHTML += `
+                        <div class="post-card">
+                            <div class="post-header"><b>${data.username}</b></div>
+                            <img src="${data.content}" class="post-media">
+                            <div class="post-info"><b>${data.username}</b> ${data.caption}</div>
+                        </div>`;
                 });
             });
         }
 
-        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; showTab('home-tab'); listenForMessages(); } else { document.getElementById('auth').style.display='block'; } }
+        window.onload = () => { if(currentUser) showTab('home-tab'); }
     </script>
     <style>
         :root { --insta-bg: #000; --text: #fff; --gray: #a8a8a8; --border: #262626; --blue: #0095f6; }
         * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
-        body { background-color: var(--insta-bg); color: var(--text); overflow-x: hidden; }
+        body { background-color: var(--insta-bg); color: var(--text); }
         
         .top-bar { position: sticky; top:0; background: black; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 10; height: 50px; }
-        .top-left-profile img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        .search-box { background: #262626; border-radius: 10px; padding: 10px; margin: 15px; display: flex; align-items: center; }
+        .search-box input { background: transparent; border: none; color: white; width: 100%; outline: none; margin-left: 10px; }
+        
+        .user-row { display: flex; align-items: center; padding: 10px 15px; gap: 15px; cursor: pointer; }
+        .user-row img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
 
-        .search-container { padding: 15px; }
-        .search-box { display: flex; align-items: center; background: #262626; border-radius: 10px; padding: 10px; }
-        .search-box input { background: transparent; border: none; color: white; width: 100%; outline: none; margin-left: 8px; }
-        .user-row { display: flex; align-items: center; padding: 10px; gap: 15px; border-bottom: 0.5px solid #111; cursor: pointer; }
-        .user-row img { width: 45px; height: 45px; border-radius: 50%; }
-
-        .profile-head { padding: 20px 15px; display: flex; align-items: center; gap: 30px; }
-        #main-pfp { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #222; }
+        .profile-head { padding: 20px 15px; display: flex; align-items: center; gap: 25px; }
+        #main-pfp { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
         .stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
-        .edit-btn { width: 100%; background: #333; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+        .stat-num { font-weight: bold; font-size: 18px; display: block; }
+        
+        .edit-btn { width: 100%; background: #363636; color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 600; margin-top: 15px; cursor: pointer; }
+        .follow-blue { background: var(--blue); }
 
-        /* Chat UI */
-        #chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 70%; padding: 10px 15px; border-radius: 18px; font-size: 14px; }
-        .msg.sent { align-self: flex-end; background: var(--blue); }
-        .msg.received { align-self: flex-start; background: #262626; }
-        .chat-input-area { padding: 10px; display: flex; gap: 10px; border-top: 1px solid var(--border); }
-        .chat-input-area input { flex: 1; background: #121212; border: 1px solid #333; color: white; border-radius: 20px; padding: 10px 15px; outline: none; }
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 20px; }
+        .grid-item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
 
         .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px; background: black; border-top: 1px solid var(--border); }
         .nav-item { font-size: 24px; cursor: pointer; }
-        .tab-content { display: none; flex-direction: column; height: calc(100vh - 110px); }
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 20px; }
-        .grid-item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-box { background: #121212; padding: 20px; border-radius: 12px; width: 100%; }
-        .post-card { border-bottom: 1px solid #111; padding-bottom: 10px; }
+        .tab-content { display: none; flex-direction: column; height: 100vh; overflow-y: auto; padding-bottom: 70px; }
+        .post-card { border-bottom: 1px solid #111; margin-bottom: 10px; }
         .post-media { width: 100%; }
     </style>
 </head>
 <body>
+    <div id="app">
+        <div class="top-bar"><b>MeetZone</b> <span>➕</span></div>
 
-    <div id="auth" style="padding: 100px 30px; text-align: center;">
-        <h1 style="font-style: italic; font-size: 45px; margin-bottom: 20px;">MeetZone</h1>
-        <input id="username" placeholder="Username" style="width:100%; padding:12px; margin:10px 0; background:#111; color:white; border:1px solid #333;">
-        <input id="password" type="password" placeholder="Password" style="width:100%; padding:12px; margin:10px 0; background:#111; color:white; border:1px solid #333;">
-        <button onclick="handleAuth()" style="width:100%; padding:12px; background:var(--blue); color:white; border:none; border-radius:5px; font-weight:bold;">Log In</button>
-    </div>
-
-    <div id="app" style="display:none;">
-        <div class="top-bar">
-            <div class="top-left-profile"><img id="top-left-pfp" src=""> <span id="prof-name-title"></span></div>
-            <div style="display: flex; gap: 15px;">
-                <span onclick="openPostModal()" style="font-size: 24px; cursor: pointer;">➕</span>
-            </div>
-        </div>
-
-        <div id="home-tab" class="tab-content"><div id="home-feed" style="overflow-y:auto;"></div></div>
+        <div id="home-tab" class="tab-content"><div id="home-feed"></div></div>
 
         <div id="search-tab" class="tab-content">
-            <div class="search-container"><div class="search-box">🔍 <input id="search-input" placeholder="Search User ID"></div></div>
-            <div id="search-results" style="overflow-y:auto;"></div>
+            <div class="search-box">🔍 <input id="search-input" placeholder="Search"></div>
+            <div id="search-results"></div>
         </div>
 
-        <div id="chat-view-tab" class="tab-content">
-            <div class="top-bar" style="background:#111;"><span onclick="showTab('search-tab')">⬅️</span> <b id="chat-with-name">User</b> <span></span></div>
-            <div id="chat-box"></div>
-            <div class="chat-input-area">
-                <input id="chat-input" placeholder="Message...">
-                <button onclick="sendMsg()" style="background:none; border:none; color:var(--blue); font-weight:bold;">Send</button>
-            </div>
-        </div>
-
-        <div id="profile-tab" class="tab-content" style="overflow-y:auto;">
+        <div id="profile-tab" class="tab-content">
             <div class="profile-head">
                 <img id="main-pfp" src="">
                 <div class="stats">
-                    <div><b id="post-count">0</b><br><small>posts</small></div>
-                    <div><b>0</b><br><small>followers</small></div>
-                    <div><b>0</b><br><small>following</small></div>
+                    <div><span class="stat-num" id="post-count">0</span> posts</div>
+                    <div><span class="stat-num" id="follower-count">0</span> followers</div>
+                    <div><span class="stat-num" id="following-count">0</span> following</div>
                 </div>
             </div>
             <div style="padding: 0 15px;">
@@ -255,22 +186,10 @@
             <div class="grid-container" id="profile-grid"></div>
         </div>
 
-        <div id="post-modal" class="modal">
-            <div class="modal-box">
-                <h3>New Post</h3>
-                <input id="post-url" placeholder="Image URL" style="width:100%; padding:10px; margin:10px 0; background:black; color:white; border:1px solid #333;">
-                <textarea id="post-caption" placeholder="Caption..." style="width:100%; padding:10px; background:black; color:white; border:1px solid #333;"></textarea>
-                <button onclick="submitPost()" style="width:100%; padding:10px; background:var(--blue); color:white; border:none; margin-top:10px;">Post Now</button>
-                <p onclick="closePostModal()" style="text-align:center; color:gray; margin-top:15px; cursor:pointer;">Cancel</p>
-            </div>
-        </div>
-
         <div class="nav">
             <span class="nav-item" onclick="showTab('home-tab')">🏠</span>
             <span class="nav-item" onclick="showTab('search-tab')">🔍</span>
-            <span class="nav-item" onclick="showTab('search-tab')">💬</span>
             <span class="nav-item" onclick="showTab('profile-tab')">👤</span>
-            <span class="nav-item" onclick="if(confirm('Logout?')) { localStorage.clear(); location.reload(); }">⚙️</span>
         </div>
     </div>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeetZone | Social Post & Chat</title>
+    <title>MeetZone | Social Profile</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -20,10 +20,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let currentUser = localStorage.getItem('MeetZoneUser') || "";
-        let activeChat = "";
-        let unsubscribeMsgs = null;
 
-        // --- AUTH & NOTIFICATIONS ---
+        // --- AUTH ---
         window.handleAuth = async function() {
             const user = document.getElementById('username').value.trim().toLowerCase();
             const pass = document.getElementById('password').value.trim();
@@ -34,7 +32,7 @@
                 if (userSnap.data().password === pass) { loginSuccess(user); }
                 else { alert("Galat Password!"); }
             } else {
-                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "MeetZone User", pfp: "" });
+                await setDoc(userRef, { username: user, password: pass, friends: [], bio: "New to MeetZone", pfp: "" });
                 loginSuccess(user);
             }
         }
@@ -44,23 +42,22 @@
             location.reload();
         }
 
-        // --- TAB NAVIGATION ---
+        // --- NAVIGATION ---
         window.showTab = (t) => {
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(t).style.display = 'flex';
-            if(t === 'home-tab') loadPosts();
-            if(t === 'friend-tab') { document.getElementById('notif-dot').style.display = 'none'; loadFriends(); }
-            if(t === 'profile-tab') loadProfileSettings();
+            if(t === 'home-tab') loadHomeFeed();
+            if(t === 'profile-tab') loadProfile();
         }
 
-        // --- POST SYSTEM (PLUS ICON) ---
+        // --- POSTING SYSTEM ---
         window.openPostModal = () => document.getElementById('post-modal').style.display = 'flex';
         window.closePostModal = () => document.getElementById('post-modal').style.display = 'none';
 
         window.submitPost = async () => {
             const url = document.getElementById('post-url').value.trim();
             const caption = document.getElementById('post-caption').value.trim();
-            if(!url) return alert("Image/Video URL daalein!");
+            if(!url) return alert("URL zaroori hai!");
 
             await addDoc(collection(db, "posts"), {
                 username: currentUser,
@@ -72,10 +69,11 @@
             document.getElementById('post-url').value = "";
             document.getElementById('post-caption').value = "";
             closePostModal();
-            showTab('home-tab');
+            showTab('profile-tab');
         }
 
-        function loadPosts() {
+        // --- LOAD HOME FEED ---
+        function loadHomeFeed() {
             const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
             onSnapshot(q, (snap) => {
                 const feed = document.getElementById('home-feed');
@@ -84,126 +82,112 @@
                     const data = d.data();
                     feed.innerHTML += `
                         <div class="post-card">
-                            <div class="post-user"><b>${data.username}</b></div>
-                            <img src="${data.content}" class="post-media" onerror="this.style.display='none'">
-                            <div class="post-desc"><b>${data.username}</b> ${data.caption}</div>
+                            <div class="post-header"><b>${data.username}</b></div>
+                            <img src="${data.content}" class="post-media">
+                            <div class="post-info"><b>${data.username}</b> ${data.caption}</div>
                         </div>`;
                 });
             });
         }
 
-        // --- PROFILE EDIT SYSTEM ---
-        async function loadProfileSettings() {
+        // --- PROFILE SYSTEM ---
+        async function loadProfile() {
             const snap = await getDoc(doc(db, "users", currentUser));
             const data = snap.data();
-            document.getElementById('edit-bio').value = data.bio || "";
-            document.getElementById('edit-pfp').value = data.pfp || "";
+            
+            // Set Stats & Info
+            document.getElementById('prof-name').innerText = data.username;
+            document.getElementById('prof-bio').innerText = data.bio || "No bio yet";
+            if(data.pfp) document.getElementById('main-pfp').src = data.pfp;
+
+            // Load User Posts in Grid
+            const q = query(collection(db, "posts"), where("username", "==", currentUser));
+            onSnapshot(q, (snap) => {
+                const grid = document.getElementById('profile-grid');
+                grid.innerHTML = "";
+                document.getElementById('post-count').innerText = snap.size;
+                snap.forEach(d => {
+                    grid.innerHTML += `<div class="grid-item"><img src="${d.data().content}"></div>`;
+                });
+            });
         }
 
         window.saveProfile = async () => {
-            const bio = document.getElementById('edit-bio').value;
-            const pfp = document.getElementById('edit-pfp').value;
-            await updateDoc(doc(db, "users", currentUser), { bio, pfp });
-            alert("Profile Update Ho Gayi!");
-            location.reload();
-        }
-
-        // --- EXISTING CHAT LOGIC (RETAINED) ---
-        function loadFriends() {
-            onSnapshot(doc(db, "users", currentUser), (snap) => {
-                const list = document.getElementById('friend-list');
-                list.innerHTML = "";
-                snap.data()?.friends?.forEach(f => {
-                    list.innerHTML += `<div class="card" onclick="openChat('${f}')"><b>${f}</b><br><small id="status-${f}">Tap to chat</small></div>`;
+            const bio = prompt("Enter new Biology (Bio):");
+            const pfp = prompt("Enter Profile Picture URL:");
+            if(bio || pfp) {
+                await updateDoc(doc(db, "users", currentUser), { 
+                    bio: bio || "MeetZone User", 
+                    pfp: pfp || "" 
                 });
-            });
+                loadProfile();
+            }
         }
 
-        window.openChat = (f) => { activeChat = f; document.getElementById('chat-title').innerText = f; showTab('chat-box'); loadMsgs(); }
-        
-        function loadMsgs() {
-            const chatId = [currentUser, activeChat].sort().join("_");
-            const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
-            onSnapshot(q, (snap) => {
-                const box = document.getElementById('msgs'); box.innerHTML = "";
-                snap.forEach(d => {
-                    const isMe = d.data().sender === currentUser;
-                    box.innerHTML += `<div class="msg-wrapper ${isMe?'me-wrap':'you-wrap'}"><div class="msg-bubble ${isMe?'me':'you'}">${d.data().text}</div></div>`;
-                });
-                box.scrollTop = box.scrollHeight;
-            });
-        }
-
-        window.sendMsg = async () => {
-            const input = document.getElementById('m-input');
-            const chatId = [currentUser, activeChat].sort().join("_");
-            await addDoc(collection(db, "chats", chatId, "messages"), { text: input.value, sender: currentUser, time: serverTimestamp() });
-            input.value = "";
-        }
-
-        window.onload = () => { 
-            if(currentUser) { 
-                document.getElementById('auth').style.display='none'; 
-                document.getElementById('app').style.display='block'; 
-                showTab('home-tab');
-            } 
-        }
+        window.onload = () => { if(currentUser) { document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; showTab('home-tab'); } }
     </script>
     <style>
-        :root { --insta-blue: #0095f6; --insta-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        :root { --insta-bg: #000; --text: #fff; --gray: #a8a8a8; --border: #262626; }
         * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
+        body { background-color: var(--insta-bg); color: var(--text); }
         
-        /* Layout */
-        .top-bar { position: sticky; top: 0; background: white; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid #dbdbdb; }
-        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px; background: white; border-top: 1px solid #dbdbdb; z-index: 100; }
+        .top-bar { position: sticky; top:0; background: black; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); z-index: 10; }
+        
+        /* Profile Layout */
+        .profile-head { padding: 20px 15px; display: flex; align-items: center; gap: 30px; }
+        .pfp-container { position: relative; width: 80px; height: 80px; }
+        #main-pfp { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+        .stats { display: flex; flex: 1; justify-content: space-around; text-align: center; }
+        .stat-num { font-weight: bold; font-size: 18px; display: block; }
+        .stat-label { font-size: 13px; color: var(--gray); }
+        
+        .profile-bio { padding: 0 15px 20px; font-size: 14px; }
+        .profile-btns { display: flex; gap: 10px; padding: 0 15px; }
+        .edit-btn { flex: 1; background: #363636; border: none; color: white; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* Grid */
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 20px; }
+        .grid-item { aspect-ratio: 1/1; background: #121212; overflow: hidden; }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-box { background: #262626; padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #363636; background: #121212; color: white; }
+
+        /* Nav */
+        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 15px; background: black; border-top: 0.5px solid var(--border); }
         .nav-item { font-size: 24px; cursor: pointer; }
-        .tab-content { display: none; flex-direction: column; padding: 15px; padding-bottom: 80px; }
+        .tab-content { display: none; flex-direction: column; padding-bottom: 80px; }
 
-        /* Post Modal & Cards */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .modal-box { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; }
-        .post-card { border-bottom: 1px solid #dbdbdb; margin-bottom: 20px; background: white; }
-        .post-user { padding: 10px; font-size: 14px; }
-        .post-media { width: 100%; max-height: 450px; object-fit: cover; }
-        .post-desc { padding: 10px; font-size: 14px; line-height: 1.4; }
-
-        /* Inputs */
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dbdbdb; border-radius: 8px; background: #fafafa; }
-        .btn { width: 100%; padding: 12px; background: var(--insta-blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        
-        /* Chat UI */
-        #msgs { height: calc(100vh - 220px); overflow-y: auto; display: flex; flex-direction: column; }
-        .msg-wrapper { display: flex; margin-bottom: 8px; }
-        .me-wrap { justify-content: flex-end; }
-        .msg-bubble { padding: 8px 16px; border-radius: 18px; max-width: 70%; font-size: 15px; }
-        .me { background: var(--insta-blue); color: white; }
-        .you { background: #efefef; color: #262626; }
+        /* Home Post */
+        .post-card { margin-bottom: 15px; }
+        .post-header { padding: 10px; font-size: 14px; }
+        .post-media { width: 100%; }
+        .post-info { padding: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div id="auth" style="padding:50px 30px; text-align:center; max-width: 400px; margin: auto;">
-        <h1 style="font-style: italic; margin-bottom: 30px;">MeetZone</h1>
-        <input id="username" placeholder="Username">
+    <div id="auth" style="padding:100px 30px; text-align:center;">
+        <h1 style="font-style: italic; font-size: 40px; margin-bottom: 20px;">MeetZone</h1>
+        <input id="username" placeholder="Phone, username or email">
         <input id="password" type="password" placeholder="Password">
-        <button onclick="handleAuth()" class="btn">Log In</button>
+        <button onclick="handleAuth()" style="width:100%; padding:12px; background:#0095f6; color:white; border:none; border-radius:8px; font-weight:bold;">Log In</button>
     </div>
 
     <div id="app" style="display:none;">
         <div class="top-bar">
-            <span style="font-weight:700; font-size:20px;">MeetZone</span>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <span style="font-size: 28px; cursor: pointer;" onclick="openPostModal()">+</span>
-                <span id="chat-title" style="color:var(--insta-blue); font-weight:600;"></span>
-            </div>
+            <span id="prof-name" style="font-weight:700; font-size:22px;">MeetZone</span>
+            <span style="font-size: 30px; cursor: pointer;" onclick="openPostModal()">+</span>
         </div>
-        
+
         <div id="post-modal" class="modal">
             <div class="modal-box">
-                <h3>Create New Post</h3>
-                <input id="post-url" placeholder="Paste Image/Video URL">
+                <h3 style="margin-bottom:10px;">New Post</h3>
+                <input id="post-url" placeholder="Paste Photo URL">
                 <textarea id="post-caption" placeholder="Write a caption..."></textarea>
-                <button onclick="submitPost()" class="btn">Post Karo</button>
-                <button onclick="closePostModal()" style="background:none; border:none; margin-top:10px; color:gray; width:100%;">Cancel</button>
+                <button onclick="submitPost()" style="width:100%; padding:12px; background:#0095f6; color:white; border:none; border-radius:8px;">Share Post</button>
+                <p onclick="closePostModal()" style="text-align:center; margin-top:15px; color:gray; cursor:pointer;">Cancel</p>
             </div>
         </div>
 
@@ -212,29 +196,34 @@
         </div>
 
         <div id="profile-tab" class="tab-content">
-            <h3>Edit Profile</h3>
-            <label style="font-size: 12px; color: gray;">Profile Photo URL</label>
-            <input id="edit-pfp" placeholder="URL like https://image.com/me.jpg">
-            <label style="font-size: 12px; color: gray;">Bio / Biology</label>
-            <textarea id="edit-bio" placeholder="Apne baare mein likhein..."></textarea>
-            <button onclick="saveProfile()" class="btn">Save Profile</button>
+            <div class="profile-head">
+                <div class="pfp-container">
+                    <img id="main-pfp" src="https://via.placeholder.com/150">
+                </div>
+                <div class="stats">
+                    <div><span class="stat-num" id="post-count">0</span><span class="stat-label">posts</span></div>
+                    <div><span class="stat-num">1,240</span><span class="stat-label">followers</span></div>
+                    <div><span class="stat-num">350</span><span class="stat-label">following</span></div>
+                </div>
+            </div>
+            <div class="profile-bio">
+                <b id="user-display">User Profile</b><br>
+                <span id="prof-bio">Loading biology...</span>
+            </div>
+            <div class="profile-btns">
+                <button class="edit-btn" onclick="saveProfile()">Edit profile</button>
+                <button class="edit-btn">Share profile</button>
+            </div>
+            <div class="grid-container" id="profile-grid">
+                </div>
         </div>
 
-        <div id="friend-tab" class="tab-content">
-            <div id="friend-list"></div>
-        </div>
-        
-        <div id="chat-box" class="tab-content">
-            <div id="msgs"></div>
-            <div style="display:flex; gap:10px; padding-top:10px;">
-                <input id="m-input" placeholder="Message...">
-                <button onclick="sendMsg()" style="background:none; border:none; color:var(--insta-blue); font-weight:700;">Send</button>
-            </div>
-        </div>
+        <div id="friend-tab" class="tab-content" style="padding:20px; text-align:center; color:gray;">Chat section here</div>
 
         <div class="nav">
             <span class="nav-item" onclick="showTab('home-tab')">🏠</span>
-            <span class="nav-item" onclick="showTab('friend-tab')">💬</span>
+            <span class="nav-item" onclick="showTab('friend-tab')">🔍</span>
+            <span class="nav-item" onclick="openPostModal()">➕</span>
             <span class="nav-item" onclick="showTab('profile-tab')">👤</span>
             <span class="nav-item" onclick="if(confirm('Logout?')) { localStorage.clear(); location.reload(); }">⚙️</span>
         </div>

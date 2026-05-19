@@ -1,245 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeetZone | Final Fix</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, setDoc, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDoc, updateDoc, arrayUnion, arrayRemove, where, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>WAKE UP — No Excuses Alarm</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08080f;
+  --card: #0f0f1a;
+  --border: #1a1a2e;
+  --orange: #ff6b2b;
+  --orange2: #ffaa00;
+  --blue: #00c2ff;
+  --green: #00ff88;
+  --red: #ff2d55;
+  --text: #e8e8f0;
+  --dim: #44445a;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCVo-BZ88zoNxCjp-GfwTI9ABe14LNGnUA",
-            authDomain: "online-chat-application-80592.firebaseapp.com",
-            projectId: "online-chat-application-80592",
-            storageBucket: "online-chat-application-80592.appspot.com",
-            messagingSenderId: "468130262659",
-            appId: "1:468130262659:web:70208a13964e79fdbbf5b6"
-        };
+/* ── SCREENS ── */
+.screen { display:none; width:100%; max-width:440px; min-height:100vh; padding:24px 18px 40px; flex-direction:column; align-items:center; }
+.screen.active { display:flex; }
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        let currentUser = localStorage.getItem('MeetZoneUser') || "";
-        let activeChatUser = "";
+/* ══ SCREEN 1: HOME ══ */
+#homeScreen {
+  background: radial-gradient(ellipse 70% 35% at 50% 0%, rgba(255,107,43,0.13) 0%, transparent 65%), var(--bg);
+  padding-top: 48px;
+}
+.app-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:5px; color:var(--dim); margin-bottom:6px; }
+.app-brand { font-size:38px; font-weight:800; letter-spacing:-1px; background:linear-gradient(130deg,var(--orange),var(--orange2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:44px; }
+.home-clock { font-family:'JetBrains Mono',monospace; font-size:clamp(60px,18vw,82px); font-weight:700; color:#fff; letter-spacing:-3px; line-height:1; text-shadow:0 0 50px rgba(255,107,43,0.25); margin-bottom:6px; }
+.home-ampm { font-family:'JetBrains Mono',monospace; font-size:18px; color:var(--orange); letter-spacing:3px; margin-bottom:4px; }
+.home-date { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--dim); margin-bottom:44px; }
 
-        // --- GLOBAL NAVIGATION ---
-        window.showTab = (tabId, targetUser = null) => {
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            const targetEl = document.getElementById(tabId);
-            if(targetEl) targetEl.style.display = 'flex';
+/* Alarm card */
+.card { width:100%; background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px 20px; margin-bottom:14px; }
+.card-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:4px; color:var(--dim); margin-bottom:18px; }
+.time-row { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px; }
+.t-box { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.t-btn { background:rgba(255,107,43,0.12); border:1px solid rgba(255,107,43,0.2); border-radius:8px; color:var(--orange); width:64px; height:32px; font-size:18px; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; }
+.t-btn:hover { background:rgba(255,107,43,0.22); }
+.t-val { font-family:'JetBrains Mono',monospace; font-size:46px; font-weight:700; color:#fff; min-width:72px; text-align:center; line-height:1; }
+.t-colon { font-family:'JetBrains Mono',monospace; font-size:46px; color:var(--dim); padding-bottom:4px; animation:blink 1s step-end infinite; }
+@keyframes blink { 50%{opacity:0;} }
+.ampm-col { display:flex; flex-direction:column; gap:5px; margin-left:4px; }
+.ampm-pill { background:var(--border); border:1px solid var(--dim); border-radius:8px; color:var(--dim); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; padding:7px 10px; cursor:pointer; transition:all .15s; }
+.ampm-pill.on { background:rgba(255,107,43,0.18); border-color:var(--orange); color:var(--orange); }
 
-            if(tabId === 'home-tab') loadHomeFeed();
-            if(tabId === 'search-tab') setupSearch();
-            if(tabId === 'profile-tab') loadProfile(targetUser || currentUser);
-            // Inbox tab logic updated to show active chats could go here
-        }
+/* Days */
+.days-row { display:flex; gap:6px; justify-content:center; margin-bottom:18px; flex-wrap:wrap; }
+.day-chip { background:var(--border); border:1px solid transparent; border-radius:50px; color:var(--dim); font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; padding:6px 10px; cursor:pointer; transition:all .15s; }
+.day-chip.on { background:rgba(255,107,43,0.15); border-color:var(--orange); color:var(--orange); }
 
-        // --- FOLLOW LOGIC ---
-        window.toggleFollow = async (target) => {
-            const myRef = doc(db, "users", currentUser);
-            const targetRef = doc(db, "users", target);
-            const mySnap = await getDoc(myRef);
-            const isFollowing = (mySnap.data().following || []).includes(target);
+/* Label input */
+.alarm-label-input { width:100%; background:#0a0a15; border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Syne',sans-serif; font-size:14px; padding:11px 14px; outline:none; margin-bottom:18px; transition:border-color .2s; }
+.alarm-label-input::placeholder { color:var(--dim); }
+.alarm-label-input:focus { border-color:var(--orange); }
 
-            await updateDoc(myRef, { following: isFollowing ? arrayRemove(target) : arrayUnion(target) });
-            await updateDoc(targetRef, { followers: isFollowing ? arrayRemove(currentUser) : arrayUnion(currentUser) });
-        }
+/* Set button */
+.set-btn { width:100%; background:linear-gradient(130deg,var(--orange),var(--orange2)); border:none; border-radius:14px; color:#000; font-family:'Syne',sans-serif; font-size:16px; font-weight:800; letter-spacing:2px; padding:16px; cursor:pointer; transition:all .15s; }
+.set-btn:hover { opacity:.9; transform:scale(1.01); }
+.set-btn:active { transform:scale(.98); }
 
-        // --- SEARCH & VISIT PROFILE ---
-        function setupSearch() {
-            const input = document.getElementById('search-input');
-            const resDiv = document.getElementById('search-results');
-            input.oninput = () => {
-                const val = input.value.trim().toLowerCase();
-                if(!val) { resDiv.innerHTML = ""; return; }
-                const q = query(collection(db, "users"), where("username", ">=", val), where("username", "<=", val + '\uf8ff'), limit(10));
-                onSnapshot(q, (snap) => {
-                    resDiv.innerHTML = "";
-                    snap.forEach(d => {
-                        const u = d.data();
-                        resDiv.innerHTML += `
-                            <div class="user-row" onclick="showTab('profile-tab', '${u.username}')">
-                                <img src="${u.pfp || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
-                                <b>${u.username}</b>
-                            </div>`;
-                    });
-                });
-            };
-        }
+/* Alarm list */
+.list-header { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.list-count { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--dim); }
+.clear-btn { background:none; border:none; color:var(--dim); font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; cursor:pointer; transition:color .15s; }
+.clear-btn:hover { color:var(--red); }
+.alarm-list { width:100%; }
 
-        // --- PROFILE LOADING ---
-        async function loadProfile(username) {
-            onSnapshot(doc(db, "users", username), (snap) => {
-                if(!snap.exists()) return;
-                const d = snap.data();
-                document.getElementById('p-img').src = d.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-                document.getElementById('p-name').innerText = d.username;
-                document.getElementById('f-count').innerText = (d.followers || []).length;
-                document.getElementById('fg-count').innerText = (d.following || []).length;
+/* Alarm item */
+.alarm-item { background:var(--card); border:1px solid var(--border); border-left:3px solid var(--orange); border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; animation:fadeIn .25s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
+.alarm-item.off { border-left-color:var(--border); opacity:.45; }
+.ai-time { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:#fff; min-width:80px; }
+.ai-time span { font-size:11px; color:var(--orange); letter-spacing:1px; }
+.ai-info { flex:1; }
+.ai-name { font-size:13px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.ai-days { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1px; color:var(--dim); }
+.ai-actions { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.sw { position:relative; width:42px; height:24px; cursor:pointer; }
+.sw input { display:none; }
+.sw-track { position:absolute; inset:0; background:var(--border); border-radius:50px; transition:all .2s; }
+.sw input:checked + .sw-track { background:rgba(255,107,43,0.3); border:1px solid var(--orange); }
+.sw-thumb { position:absolute; top:4px; left:4px; width:16px; height:16px; background:var(--dim); border-radius:50%; transition:all .2s; }
+.sw input:checked ~ .sw-thumb { transform:translateX(18px); background:var(--orange); }
+.del-btn { background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px; transition:color .15s; }
+.del-btn:hover { color:var(--red); }
 
-                const btnArea = document.getElementById('p-btns');
-                if(username === currentUser) {
-                    btnArea.innerHTML = `<button class="btn">Edit Profile</button>`;
-                } else {
-                    const isF = (d.followers || []).includes(currentUser);
-                    btnArea.innerHTML = `
-                        <button class="btn ${isF ? '' : 'blue-btn'}" onclick="toggleFollow('${username}')">${isF ? 'Following' : 'Follow'}</button>
-                        <button class="btn" onclick="openChat('${username}')">Message</button>`;
-                }
-            });
-        }
+.empty-msg { width:100%; text-align:center; padding:40px 20px; color:var(--dim); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:3px; border:1px dashed var(--border); border-radius:14px; }
+.empty-icon { font-size:36px; margin-bottom:12px; opacity:.3; }
 
-        // --- CHAT SYSTEM ---
-        window.openChat = (target) => {
-            activeChatUser = target;
-            document.getElementById('chat-title').innerText = target;
-            showTab('chat-view-tab');
-            const chatID = [currentUser, target].sort().join("_");
-            const q = query(collection(db, "chats", chatID, "messages"), orderBy("timestamp", "asc"));
-            
-            onSnapshot(q, (snap) => {
-                const box = document.getElementById('msg-box');
-                box.innerHTML = "";
-                snap.forEach(d => {
-                    const m = d.data();
-                    box.innerHTML += `<div class="msg ${m.sender === currentUser ? 'sent' : 'received'}">${m.text}</div>`;
-                });
-                box.scrollTop = box.scrollHeight; // Auto-scroll to bottom
-            });
-        }
+/* ══ SCREEN 2: RINGING ══ */
+#ringScreen {
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 30%, rgba(255,45,85,0.18) 0%, transparent 70%),
+    var(--bg);
+}
+.ring-icon { font-size:80px; animation:ringShake .4s ease infinite alternate; margin-bottom:20px; }
+@keyframes ringShake { from{transform:rotate(-15deg) scale(1.05);} to{transform:rotate(15deg) scale(1.1);} }
+.ring-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:5px; color:var(--dim); margin-bottom:8px; text-transform:uppercase; }
+.ring-name { font-size:26px; font-weight:800; color:#fff; margin-bottom:24px; text-align:center; }
+.ring-time { font-family:'JetBrains Mono',monospace; font-size:72px; font-weight:700; color:var(--red); line-height:1; margin-bottom:6px; text-shadow:0 0 40px rgba(255,45,85,0.5); animation:pulse 1s ease infinite alternate; }
+@keyframes pulse { from{opacity:1;} to{opacity:.7;} }
+.ring-ampm { font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--orange); letter-spacing:4px; margin-bottom:48px; }
+.ring-hint { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--dim); margin-bottom:20px; }
+.dismiss-ring-btn { width:100%; max-width:320px; background:var(--red); border:none; border-radius:60px; color:#fff; font-family:'Syne',sans-serif; font-size:18px; font-weight:800; letter-spacing:3px; padding:20px; cursor:pointer; animation:btnPulse 1.2s ease infinite; }
+@keyframes btnPulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,0.4);} 50%{box-shadow:0 0 0 16px rgba(255,45,85,0);} }
 
-        window.sendMsg = async () => {
-            const inp = document.getElementById('msg-input');
-            const msgText = inp.value.trim();
-            if(!msgText) return;
+/* ══ SCREEN 3: MATH ══ */
+#mathScreen {
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 20%, rgba(255,107,43,0.14) 0%, transparent 65%),
+    var(--bg);
+}
+.math-step { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:4px; color:var(--orange); margin-bottom:12px; }
+.math-title { font-size:28px; font-weight:800; color:#fff; margin-bottom:6px; text-align:center; }
+.math-sub { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--dim); margin-bottom:40px; text-align:center; }
+.math-question { font-family:'JetBrains Mono',monospace; font-size:52px; font-weight:700; color:var(--orange2); margin-bottom:10px; text-align:center; line-height:1.1; }
+.math-instruct { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--dim); margin-bottom:28px; }
+.math-input { width:100%; max-width:280px; background:#0a0a15; border:2px solid var(--border); border-radius:14px; color:var(--orange2); font-family:'JetBrains Mono',monospace; font-size:38px; font-weight:700; text-align:center; padding:16px; outline:none; transition:border-color .2s; margin-bottom:16px; }
+.math-input:focus { border-color:var(--orange); }
+.math-input.wrong { border-color:var(--red); animation:shake .3s ease; }
+.math-input.right { border-color:var(--green); }
+@keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+.math-err { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--red); letter-spacing:2px; height:18px; margin-bottom:10px; }
+.math-submit { width:100%; max-width:280px; background:linear-gradient(130deg,var(--orange),var(--orange2)); border:none; border-radius:50px; color:#000; font-family:'Syne',sans-serif; font-size:16px; font-weight:800; letter-spacing:2px; padding:16px; cursor:pointer; margin-bottom:16px; transition:all .15s; }
+.math-submit:hover { opacity:.9; }
+.math-attempts { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--dim); }
 
-            const chatID = [currentUser, activeChatUser].sort().join("_");
-            
-            // UI clear turant karein taaki fast feel ho
-            inp.value = "";
-            inp.focus(); 
+/* Numpad */
+.numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:280px; margin-bottom:20px; }
+.np-btn { background:var(--card); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; padding:18px 8px; cursor:pointer; transition:all .12s; }
+.np-btn:active { background:rgba(255,107,43,0.2); border-color:var(--orange); transform:scale(.95); }
+.np-btn.np-del { font-size:16px; color:var(--dim); }
+.np-btn.np-clear { font-size:12px; color:var(--dim); letter-spacing:1px; }
 
-            await addDoc(collection(db, "chats", chatID, "messages"), { 
-                text: msgText, 
-                sender: currentUser, 
-                timestamp: serverTimestamp() 
-            });
+/* ══ SCREEN 4: WATER SCAN ══ */
+#scanScreen {
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 20%, rgba(0,194,255,0.1) 0%, transparent 65%),
+    var(--bg);
+}
+.scan-step { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:4px; color:var(--blue); margin-bottom:12px; }
+.scan-title { font-size:28px; font-weight:800; color:#fff; margin-bottom:6px; text-align:center; }
+.scan-sub { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--dim); margin-bottom:32px; text-align:center; }
+.scan-frame { position:relative; width:260px; height:260px; margin-bottom:28px; }
+.scan-video { width:260px; height:260px; object-fit:cover; border-radius:20px; background:#000; display:block; }
+.scan-overlay { position:absolute; inset:0; border-radius:20px; pointer-events:none; }
+.scan-corner { position:absolute; width:28px; height:28px; border-color:var(--blue); border-style:solid; }
+.sc-tl { top:0; left:0; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+.sc-tr { top:0; right:0; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+.sc-bl { bottom:0; left:0; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+.sc-br { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+.scan-line { position:absolute; left:10px; right:10px; height:2px; background:linear-gradient(90deg,transparent,var(--blue),transparent); animation:scanMove 2s linear infinite; top:20px; }
+@keyframes scanMove { 0%{top:10px;opacity:1;} 90%{opacity:1;} 100%{top:240px;opacity:0;} }
+.scan-status { font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:3px; color:var(--dim); margin-bottom:20px; text-align:center; min-height:20px; }
+.scan-status.detecting { color:var(--blue); }
+.scan-status.found { color:var(--green); }
+.scan-status.fail { color:var(--red); }
+.scan-btn { width:100%; max-width:280px; background:rgba(0,194,255,0.12); border:1px solid rgba(0,194,255,0.3); border-radius:50px; color:var(--blue); font-family:'Syne',sans-serif; font-size:16px; font-weight:700; letter-spacing:2px; padding:16px; cursor:pointer; transition:all .15s; margin-bottom:12px; }
+.scan-btn:hover { background:rgba(0,194,255,0.22); }
+.scan-btn:disabled { opacity:.4; cursor:not-allowed; }
+.scan-btn-primary { background:linear-gradient(130deg,#00c2ff,#0066ff); border:none; color:#fff; }
+.scan-btn-primary:hover { opacity:.9; }
+.scan-hint { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--dim); text-align:center; }
+.scan-canvas { display:none; }
 
-            await addDoc(collection(db, "notifications"), { 
-                to: activeChatUser, 
-                from: currentUser, 
-                text: msgText 
-            });
-        }
+/* ══ SCREEN 5: SUCCESS ══ */
+#doneScreen {
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 30%, rgba(0,255,136,0.12) 0%, transparent 65%),
+    var(--bg);
+}
+.done-icon { font-size:80px; animation:popIn .5s cubic-bezier(.34,1.56,.64,1); margin-bottom:20px; }
+@keyframes popIn { from{transform:scale(0);opacity:0;} to{transform:scale(1);opacity:1;} }
+.done-title { font-size:36px; font-weight:800; color:var(--green); margin-bottom:10px; text-align:center; }
+.done-sub { font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:3px; color:var(--dim); margin-bottom:48px; text-align:center; }
+.done-btn { width:100%; max-width:280px; background:rgba(0,255,136,0.12); border:1px solid rgba(0,255,136,0.3); border-radius:50px; color:var(--green); font-family:'Syne',sans-serif; font-size:16px; font-weight:700; letter-spacing:2px; padding:16px; cursor:pointer; transition:all .15s; }
+.done-btn:hover { background:rgba(0,255,136,0.22); }
 
-        // Keyboard "Enter" key se message bhejne ke liye
-        window.handleChatKey = (e) => {
-            if (e.key === "Enter") {
-                sendMsg();
-            }
-        }
+/* Progress indicator */
+.progress-bar { display:flex; gap:8px; margin-bottom:32px; }
+.pb-step { height:4px; flex:1; border-radius:4px; background:var(--border); transition:background .4s; }
+.pb-step.done-step { background:var(--green); }
+.pb-step.active-step { background:var(--orange); }
 
-        // --- NOTIFICATIONS ---
-        function listenNotifications() {
-            const q = query(collection(db, "notifications"), where("to", "==", currentUser));
-            onSnapshot(q, (snap) => {
-                snap.docChanges().forEach(async (change) => {
-                    if (change.type === "added") {
-                        const data = change.doc.data();
-                        if(activeChatUser !== data.from) {
-                            alert(data.from + " sent 1 message: " + data.text);
-                        }
-                        await deleteDoc(doc(db, "notifications", change.doc.id));
-                    }
-                });
-            });
-        }
-
-        window.onload = () => { if(currentUser) { showTab('home-tab'); listenNotifications(); } }
-    </script>
-    <style>
-        :root { --bg: #000; --txt: #fff; --brd: #262626; --blue: #0095f6; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--txt); overflow: hidden; height: 100vh; width: 100vw; }
-        
-        .tab-content { display: none; flex-direction: column; height: 100vh; width: 100%; padding-bottom: 70px; }
-        .top-bar { padding: 15px; border-bottom: 1px solid var(--brd); display: flex; align-items: center; justify-content: space-between; font-weight: bold; background: #000; }
-        
-        .nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 15px; background: #000; border-top: 1px solid var(--brd); z-index: 100; }
-        .nav-item { font-size: 22px; cursor: pointer; }
-
-        .btn { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; background: #333; color: white; cursor: pointer; }
-        .blue-btn { background: var(--blue); }
-
-        .user-row { display: flex; align-items: center; padding: 12px 15px; gap: 15px; border-bottom: 0.5px solid #111; cursor: pointer; }
-        .user-row img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
-
-        #msg-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; background: #000; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; margin: 5px; font-size: 14px; word-wrap: break-word; }
-        .sent { align-self: flex-end; background: var(--blue); color: #fff; }
-        .received { align-self: flex-start; background: #262626; color: #fff; }
-
-        #msg-input-area { padding: 10px; display: flex; gap: 10px; background: #111; border-top: 1px solid var(--brd); padding-bottom: 15px; }
-        #msg-input-area input { flex: 1; padding: 12px 18px; border-radius: 25px; background: #000; color: #fff; border: 1px solid #333; outline: none; font-size: 16px; }
-        #msg-input-area button { color: var(--blue); background: none; border: none; font-weight: bold; font-size: 16px; cursor: pointer; padding: 0 10px; }
-    </style>
+/* Responsive */
+@media(max-width:360px) {
+  .math-question { font-size:42px; }
+  .ring-time { font-size:58px; }
+}
+</style>
 </head>
 <body>
 
-    <div id="home-tab" class="tab-content">
-        <div class="top-bar">MeetZone <span onclick="alert('Post feature coming soon!')">➕</span></div>
-        <div style="flex:1; display:flex; align-items:center; justify-content:center; color:gray;">Home Feed</div>
+<!-- ══ SCREEN 1: HOME ══ -->
+<div id="homeScreen" class="screen active">
+  <div class="app-label">// NO EXCUSES</div>
+  <div class="app-brand">WAKE UP</div>
+
+  <div class="home-clock" id="homeClock">00:00</div>
+  <div class="home-ampm" id="homeAMPM">AM</div>
+  <div class="home-date" id="homeDate">---</div>
+
+  <div class="card" style="width:100%">
+    <div class="card-label">// SET ALARM TIME</div>
+    <div class="time-row">
+      <div class="t-box">
+        <button class="t-btn" onclick="adjTime('h',1)">▲</button>
+        <div class="t-val" id="dispH">07</div>
+        <button class="t-btn" onclick="adjTime('h',-1)">▼</button>
+      </div>
+      <span class="t-colon">:</span>
+      <div class="t-box">
+        <button class="t-btn" onclick="adjTime('m',1)">▲</button>
+        <div class="t-val" id="dispM">00</div>
+        <button class="t-btn" onclick="adjTime('m',-1)">▼</button>
+      </div>
+      <div class="ampm-col">
+        <button class="ampm-pill on" id="btnAM" onclick="setAMPM('AM')">AM</button>
+        <button class="ampm-pill" id="btnPM" onclick="setAMPM('PM')">PM</button>
+      </div>
     </div>
 
-    <div id="search-tab" class="tab-content">
-        <div style="padding:15px;"><input id="search-input" placeholder="Search friends by ID..." style="width:100%; padding:12px; border-radius:10px; background:#262626; color:white; border:none; outline:none;"></div>
-        <div id="search-results" style="overflow-y:auto;"></div>
+    <div class="days-row" id="daysRow">
+      <div class="day-chip" onclick="toggleDay(this)" data-d="SUN">SUN</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-d="MON">MON</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-d="TUE">TUE</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-d="WED">WED</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-d="THU">THU</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-d="FRI">FRI</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-d="SAT">SAT</div>
     </div>
 
-    <div id="inbox-tab" class="tab-content">
-        <div class="top-bar">Direct Messages</div>
-        <div style="padding:40px; text-align:center; color:gray;">No recent chats. Search a user to start.</div>
-    </div>
+    <input class="alarm-label-input" id="alarmLabelInput" type="text" placeholder="Alarm name (e.g. Gym, Work...)" maxlength="30">
+    <button class="set-btn" onclick="addAlarm()">⏰ SET ALARM</button>
+  </div>
 
-    <div id="chat-view-tab" class="tab-content">
-        <div class="top-bar">
-            <span onclick="showTab('inbox-tab')" style="cursor:pointer; font-size: 20px;">⬅️</span> 
-            <b id="chat-title">Chat</b> 
-            <span></span>
-        </div>
-        <div id="msg-box"></div>
-        <div id="msg-input-area">
-            <input id="msg-input" placeholder="Message..." onkeydown="handleChatKey(event)">
-            <button onclick="sendMsg()">Send</button>
-        </div>
-    </div>
+  <div class="list-header">
+    <div class="list-count" id="listCount">// 0 ALARMS</div>
+    <button class="clear-btn" onclick="clearAll()">CLEAR ALL</button>
+  </div>
+  <div class="alarm-list" id="alarmList"></div>
+</div>
 
-    <div id="profile-tab" class="tab-content">
-        <div style="padding:20px; display:flex; align-items:center; gap:25px;">
-            <img id="p-img" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
-            <div style="display:flex; flex:1; justify-content:space-around; text-align:center;">
-                <div><b id="post-count">0</b><br><small>Posts</small></div>
-                <div><b id="f-count">0</b><br><small>Followers</small></div>
-                <div><b id="fg-count">0</b><br><small>Following</small></div>
-            </div>
-        </div>
-        <div style="padding:0 20px;"><b id="p-name" style="font-size:18px;"></b><div id="p-btns" style="display:flex; gap:10px; margin-top:15px;"></div></div>
-    </div>
+<!-- ══ SCREEN 2: RINGING ══ -->
+<div id="ringScreen" class="screen">
+  <div class="progress-bar">
+    <div class="pb-step active-step"></div>
+    <div class="pb-step"></div>
+    <div class="pb-step"></div>
+  </div>
+  <div class="ring-icon">🔔</div>
+  <div class="ring-label">ALARM RINGING</div>
+  <div class="ring-name" id="ringName">Wake Up!</div>
+  <div class="ring-time" id="ringTime">07:00</div>
+  <div class="ring-ampm" id="ringAMPM">AM</div>
+  <div class="ring-hint">TAP TO START DISMISSAL</div>
+  <button class="dismiss-ring-btn" onclick="goToMath()">STOP ALARM →</button>
+</div>
 
-    <div id="setting-tab" class="tab-content">
-        <div class="top-bar">Settings</div>
-        <div style="padding:20px;">
-            <div onclick="localStorage.clear(); location.reload();" style="color:#ff4d4d; padding:15px; background:#111; border-radius:10px; text-align:center; cursor:pointer; font-weight:bold; border: 1px solid #333;">Log Out</div>
-        </div>
-    </div>
+<!-- ══ SCREEN 3: MATH ══ -->
+<div id="mathScreen" class="screen">
+  <div class="progress-bar">
+    <div class="pb-step done-step"></div>
+    <div class="pb-step active-step"></div>
+    <div class="pb-step"></div>
+  </div>
+  <div class="math-step">// STEP 1 OF 2</div>
+  <div class="math-title">Solve to Continue</div>
+  <div class="math-sub">NO SKIPPING. NO CHEATING.</div>
+  <div class="math-question" id="mathQ">? × ? = ?</div>
+  <div class="math-instruct">ENTER YOUR ANSWER</div>
+  <input class="math-input" id="mathInput" type="text" readonly placeholder="?" maxlength="6">
+  <div class="math-err" id="mathErr"></div>
+  <div class="numpad">
+    <button class="np-btn" onclick="npTap('1')">1</button>
+    <button class="np-btn" onclick="npTap('2')">2</button>
+    <button class="np-btn" onclick="npTap('3')">3</button>
+    <button class="np-btn" onclick="npTap('4')">4</button>
+    <button class="np-btn" onclick="npTap('5')">5</button>
+    <button class="np-btn" onclick="npTap('6')">6</button>
+    <button class="np-btn" onclick="npTap('7')">7</button>
+    <button class="np-btn" onclick="npTap('8')">8</button>
+    <button class="np-btn" onclick="npTap('9')">9</button>
+    <button class="np-btn np-clear" onclick="npClear()">CLR</button>
+    <button class="np-btn" onclick="npTap('0')">0</button>
+    <button class="np-btn np-del" onclick="npDel()">⌫</button>
+  </div>
+  <button class="math-submit" onclick="checkMath()">CHECK ANSWER ✓</button>
+  <div class="math-attempts" id="mathAttempts">ATTEMPTS LEFT: 5</div>
+</div>
 
-    <div class="nav">
-        <span class="nav-item" onclick="showTab('home-tab')">🏠</span>
-        <span class="nav-item" onclick="showTab('search-tab')">🔍</span>
-        <span class="nav-item" onclick="showTab('inbox-tab')">💬</span>
-        <span class="nav-item" onclick="showTab('profile-tab')">👤</span>
-        <span class="nav-item" onclick="showTab('setting-tab')">⚙️</span>
-    </div>
-
-</body>
-</html>
+<!-- ══ SCREEN 4: WATER SCAN ══ -->
+<div id="scanScreen" class="screen">
+  <div class="progress-bar">
+    <div class="pb-step done-step"></div>
+    <div class="pb-step done-step"></div>
+    <div class="pb-step active-step"></div>
+  </div>
+  <div class="scan-step">// STEP 2 OF 2</div>
+  <div class="scan-title">Scan Water</div>
+  <div class="scan-sub">POI
